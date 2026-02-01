@@ -1,0 +1,151 @@
+
+:host {
+	display: block;
+	padding: 16px;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	color: #111827;
+	background: #0b1220;
+	min-height: 100vh;
+}
+
+.page {
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.header h1 {
+	margin: 0;
+	color: #e5e7eb;
+	font-size: 24px;
+}
+
+.header p {
+	margin: 6px 0 0;
+	color: #9ca3af;
+}
+
+.controls {
+	display: flex;
+	gap: 8px;
+}
+
+button {
+	appearance: none;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	background: rgba(255, 255, 255, 0.06);
+	color: #e5e7eb;
+	padding: 8px 10px;
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+button:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+}
+
+.panel {
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 14px;
+	padding: 14px;
+}
+
+.panel h2 {
+	margin: 0 0 6px;
+	color: #e5e7eb;
+	font-size: 16px;
+}
+
+.hint {
+	margin: 0 0 10px;
+	color: #9ca3af;
+	font-size: 13px;
+}
+
+.hint code {
+	color: #93c5fd;
+}
+
+.viewport {
+	height: 520px;
+	border-radius: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(0, 0, 0, 0.28);
+	position: relative;
+	overflow: hidden;
+}
+
+/* Theme CeriousScroll's injected native scrollbar */
+.viewport [data-cerious-scrollbar="container"] {
+	background: rgba(255, 255, 255, 0.06) !important;
+	border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
+	backdrop-filter: blur(8px);
+}
+
+.viewport [data-cerious-scrollbar="content"] {
+	opacity: 0.85;
+}
+
+.row {
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	color: #e5e7eb;
+}
+
+.row__index {
+	width: 70px;
+	color: #93c5fd;
+	font-variant-numeric: tabular-nums;
+}
+
+.row__title {
+	font-weight: 600;
+}
+
+.row__meta {
+	color: #9ca3af;
+	font-size: 12px;
+}
+
+.event {
+	margin: 10px 0 0;
+	max-height: 170px;
+	overflow: auto;
+	font-size: 12px;
+	line-height: 1.35;
+	padding: 10px;
+	border-radius: 12px;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	color: #cbd5e1;
+}
+
+.event--empty {
+	color: #9ca3af;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+@media (max-width: 980px) {
+	.grid {
+		grid-template-columns: 1fr;
+	}
+}

@@ -1,0 +1,71 @@
+ngx-cerious-scroll Commercial License
+
+Copyright © 2024–2026 Cerious DevTech LLC.
+All rights reserved.
+
+This Commercial License governs use of ngx-cerious-scroll only when you have
+entered into a separately executed commercial agreement with Cerious DevTech LLC.
+
+If you do not have such an agreement, you may use this software under the
+MIT license (see LICENSE).
+
+A commercial agreement is commonly used when ngx-cerious-scroll is:
+
+- Redistributed as part of a commercial product
+- Bundled with a proprietary SDK, framework, or component library
+- Integrated into a low-code / no-code platform
+- Used in OEM, white-label, or downstream resale offerings
+- Included in internal frameworks or platforms sold or licensed to third parties
+
+This license grants the Licensee a non-exclusive, non-transferable,
+non-sublicensable right to use, modify, and distribute ngx-cerious-scroll
+solely under the terms of that commercial agreement.
+
+### Restrictions
+
+Except as explicitly permitted in a written commercial agreement, the Licensee
+may not:
+
+- Redistribute ngx-cerious-scroll as a standalone product
+- Offer ngx-cerious-scroll as part of a competing scrolling, virtualization,
+  or UI infrastructure library
+- Remove or obscure copyright, trademark, or patent notices
+- Grant sublicenses or derivative commercial licenses
+
+### Ownership
+
+ngx-cerious-scroll and all associated intellectual property rights, including
+but not limited to copyrights, patents, and trademarks, remain the exclusive
+property of Cerious DevTech LLC.
+
+No rights are granted except those expressly stated in this license.
+
+### Patent Rights
+
+ngx-cerious-scroll includes technology covered by one or more pending patent
+applications owned by Cerious DevTech LLC.
+
+This license grants only those patent rights explicitly provided in a
+commercial agreement. No implied patent licenses are granted.
+
+### Termination
+
+Any violation of this license immediately terminates the rights granted herein
+without notice.
+
+Upon termination, the Licensee must cease all use and distribution of
+ngx-cerious-scroll.
+
+### Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+### Limitation of Liability
+
+IN NO EVENT SHALL CERIOUS DEVTECH LLC BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+For commercial licensing inquiries, contact:
+info@ceriousdevtech.com
