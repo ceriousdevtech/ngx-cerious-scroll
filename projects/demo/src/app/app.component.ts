@@ -1,52 +1,29 @@
 import { Component } from '@angular/core';
-import { JsonPipe } from '@angular/common';
+import { RouterLink, RouterOutlet } from '@angular/router';
 
-import type { CeriousScrollOptions } from '@ceriousdevtech/cerious-scroll';
-import {
-  CeriousScrollComponent,
-  CeriousScrollDirective,
-  CeriousScrollItemTemplateDirective,
-  type CeriousViewportChangeDetail,
-} from 'ngx-cerious-scroll';
+import { FpsMeterComponent } from './fps-meter.component';
 
 @Component({
   selector: 'demo-root',
   standalone: true,
-  imports: [JsonPipe, CeriousScrollComponent, CeriousScrollDirective, CeriousScrollItemTemplateDirective],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  imports: [RouterOutlet, RouterLink, FpsMeterComponent],
+  template: `
+    <div class="shell">
+      <header class="topbar">
+        <a class="topbar__brand" routerLink="/">CeriousScroll <small>Angular demos</small></a>
+        <div class="topbar__spacer"></div>
+        <demo-fps-meter />
+        <a class="topbar__link" routerLink="/">← All demos</a>
+        <a
+          class="topbar__link"
+          href="https://www.npmjs.com/package/@ceriousdevtech/ngx-cerious-scroll"
+          target="_blank"
+          rel="noreferrer"
+          >npm ↗</a
+        >
+      </header>
+      <main class="content"><router-outlet /></main>
+    </div>
+  `,
 })
-export class AppComponent {
-  items: Array<{ id: number; title: string }> = this.makeItems(2000);
-
-  lastComponentEvent: CeriousViewportChangeDetail | null = null;
-  lastDirectiveEvent: CeriousViewportChangeDetail | null = null;
-
-  options: CeriousScrollOptions = {
-    // Keep defaults, but enable event emission.
-    wheel: { enabled: true, emitViewportChangeEvent: true, coalesceViewportChangeEvent: true },
-    touch: { enabled: true },
-    keyboard: { enabled: true },
-    attachScrollbar: true,
-    autoResize: true,
-    observeContentChanges: true,
-  };
-
-  rowHeight(index: number): number {
-    // Variable row heights to exercise measurement.
-    return 36 + (index % 7) * 10;
-  }
-
-  reset(): void {
-    this.items = this.makeItems(2000);
-    this.lastComponentEvent = null;
-    this.lastDirectiveEvent = null;
-  }
-
-  private makeItems(count: number, startId = 0): Array<{ id: number; title: string }> {
-    return Array.from({ length: count }, (_, i) => {
-      const id = startId + i;
-      return { id, title: `Row ${id}` };
-    });
-  }
-}
+export class AppComponent {}

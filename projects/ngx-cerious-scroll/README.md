@@ -219,6 +219,29 @@ export class LargeListComponent {
 - `ceriousScrollMeasuredViewport: EventEmitter<MeasuredViewportRange>` - Render metrics
 - `ceriousScrollReady: EventEmitter<CeriousScroll>` - Scroller instance
 
+### Methods
+
+Both the component and directive expose:
+
+| Method | Description |
+|--------|-------------|
+| `render()` | Trigger a manual render pass. |
+| `recalculate()` | Discard all cached row heights and re-measure the viewport. |
+
+**When to call `recalculate()`:** only when the heights of rows you've *already
+rendered* change without their indices changing — e.g. a global font/density
+switch, or swapping every row to a different layout. It forces a synchronous
+re-measure (one `offsetHeight` read per visible row).
+
+**Editable rows / immutable updates:** changing `items` to a new reference with
+the **same length** refreshes the visible rows' content *in place* — focus,
+caret, and open dropdowns are preserved — and does **not** clear cached heights.
+So an editable grid that produces a new `items` array on every keystroke won't
+trigger a full viewport re-measure each time. Changing the item **count** does
+clear caches and re-measure. For an incidental single-row height change, the
+engine's `ResizeObserver` (`observeContentChanges`, on by default) updates that
+row's cached height on its own — no manual call needed.
+
 ### Template Context
 
 Templates receive the following context:
@@ -259,9 +282,9 @@ const options = {
 
 ## License
 
-Dual-licensed under MIT OR LicenseRef-CeriousScroll-Commercial.
+Licensed under the MIT License.
 
-See [LICENSE-MIT](./LICENSE-MIT) and [LICENSE-COMMERCIAL](./LICENSE-COMMERCIAL) for details.
+See [LICENSE-MIT](./LICENSE-MIT) for details.
 
 ## Related Packages
 

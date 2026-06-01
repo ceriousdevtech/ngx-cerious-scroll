@@ -1,7 +1,7 @@
 {
   "name": "ngx-cerious-scroll",
-  "version": "1.0.1",
-  "license": "(MIT OR LicenseRef-CeriousScroll-Commercial)",
+  "version": "1.0.2",
+  "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
