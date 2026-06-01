@@ -40,17 +40,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          
-          # Angular outputs the demo build to dist/demo/browser (Angular 17+)
           cp -r dist/demo/browser/. _site/
-          
-          # Expose the built library under /dist
-          mkdir -p _site/dist
-          cp -r dist/ngx-cerious-scroll/. _site/dist/
-          
-          # Copy README and license
-          cp README.md _site/
-          cp LICENSE _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
