@@ -160,13 +160,45 @@ describe('CeriousScrollDirective', () => {
       expect(host.readyScroller.totalElements).toBe(100);
     });
 
-    it('should clear caches when items change', () => {
-      spyOn(host.readyScroller, 'clearAllCaches');
+    it('should recreate the scroller (not just clear caches) when the item count changes', () => {
+      const originalScroller = host.readyScroller;
+      expect(originalScroller).toBeTruthy();
 
+      // 3 items → 1 item is a count change.  The directive must recreate the
+      // engine entirely so the ViewportRenderer's internal totalElements bound
+      // stays consistent with the new count (it is set by value at construction
+      // and cannot be patched from outside).
       host.items = [{ id: 99, name: 'Changed' }];
       fixture.detectChanges();
 
+      // A new scroller instance should have been emitted via ceriousScrollReady.
+      expect(host.readyScroller).not.toBe(originalScroller);
+      expect(host.readyScroller.totalElements).toBe(1);
+    });
+
+    it('should NOT clear caches when items change reference but count is unchanged', () => {
+      spyOn(host.readyScroller, 'clearAllCaches');
+
+      // Same length (3 -> 3), new array reference: an in-place content refresh,
+      // like an editable grid's immutable update. Clearing here would force a
+      // full viewport re-measure on every edit, so it must be avoided.
+      host.items = [
+        { id: 1, name: 'Edited 1' },
+        { id: 2, name: 'Edited 2' },
+        { id: 3, name: 'Edited 3' },
+      ];
+      fixture.detectChanges();
+
+      expect(host.readyScroller.clearAllCaches).not.toHaveBeenCalled();
+    });
+
+    it('should clear caches and re-measure when recalculate() is called', () => {
+      spyOn(host.readyScroller, 'clearAllCaches').and.callThrough();
+
+      const range = host.directive.recalculate();
+
       expect(host.readyScroller.clearAllCaches).toHaveBeenCalled();
+      expect(range).toBeTruthy();
     });
 
     it('should not render automatically when autoRender is false', () => {

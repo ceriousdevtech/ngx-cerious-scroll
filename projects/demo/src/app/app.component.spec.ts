@@ -1,48 +1,27 @@
 import { TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import { provideRouter } from '@angular/router';
 
-describe('AppComponent', () => {
+import { AppComponent } from './app.component';
+import { routes } from './app.routes';
+
+describe('AppComponent (demo shell)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
+      providers: [provideRouter(routes)],
     }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('should create the shell', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render the demo header', () => {
+  it('should render the brand and a router outlet', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('ngx-cerious-scroll demo');
-  });
-
-  it('reset should restore initial state', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-
-    app.lastComponentEvent = {
-      percentage: 0,
-      currentElement: 0,
-      scrollOffset: 0,
-      result: { element: 0, offset: 0 },
-    };
-    app.lastDirectiveEvent = {
-      percentage: 0,
-      currentElement: 0,
-      scrollOffset: 0,
-      result: { element: 0, offset: 0 },
-    };
-    app.items = [{ id: 999, title: 'temp' }];
-
-    app.reset();
-
-    expect(app.items.length).toBe(2000);
-    expect(app.lastComponentEvent).toBeNull();
-    expect(app.lastDirectiveEvent).toBeNull();
+    expect(compiled.querySelector('.topbar__brand')?.textContent).toContain('CeriousScroll');
+    expect(compiled.querySelector('router-outlet')).toBeTruthy();
   });
 });
