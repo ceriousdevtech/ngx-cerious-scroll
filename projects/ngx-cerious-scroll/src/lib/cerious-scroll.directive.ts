@@ -71,6 +71,11 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   private scheduledRenderFrame: number | null = null;
 
   private readonly viewByContainer = new Map<HTMLElement, EmbeddedViewRef<CeriousScrollItemTemplateContext<TItem>>>();
+  // Pool of views detached because their container left the viewport. Reusing
+  // them on subsequent renders avoids destroying + recreating the entire row
+  // component tree on fast scrolls (where the engine's element pool wipes
+  // textContent on reused containers, so view rootNodes get orphaned).
+  private readonly freeViews: EmbeddedViewRef<CeriousScrollItemTemplateContext<TItem>>[] = [];
 
   constructor(
     private readonly host: ElementRef<HTMLElement>,
@@ -148,7 +153,13 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     const height = hostContainer.clientHeight || hostContainer.offsetHeight;
     const contentContainer = this.hostRef.contentElement;
 
+    // Track whether the engine asked us to bind any row this pass. Pure scroll
+    // frames where the visible row set doesn't change still drive render() via
+    // the rAF coalescer — there's no point in walking the prune map or
+    // emitting the viewport range when nothing was touched.
+    let rendererInvocations = 0;
     const renderer: ElementRenderer = (index, elementContainer) => {
+      rendererInvocations++;
       // Render each row's embedded view with LOCAL change detection
       // (`view.detectChanges()` inside `renderTemplateIntoContainer`) so the
       // engine can measure its height during this pass. Do NOT wrap each row in
@@ -159,6 +170,12 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     };
 
     const range = this.hostRef.scroller.renderViewport(height, contentContainer, renderer);
+
+    if (rendererInvocations === 0) {
+      // Viewport didn't change — skip the prune walk and the (potentially
+      // zone-entering) emit.
+      return range;
+    }
 
     // Destroy views whose container the engine no longer renders. Without this,
     // every container the engine recycles into its element pool leaves its
@@ -186,9 +203,13 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     }
     for (const [container, view] of this.viewByContainer) {
       if (!active.has(container)) {
-        this.appRef.detachView(view);
-        view.destroy();
+        // Detach DOM but keep the view alive in the pool for future reuse.
+        // Destroying + recreating views per scroll step dominates frame time.
+        for (const node of view.rootNodes) {
+          if (node.parentNode) node.parentNode.removeChild(node);
+        }
         this.viewByContainer.delete(container);
+        this.freeViews.push(view);
       }
     }
   }
@@ -198,12 +219,15 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     if (this.scheduledRenderFrame != null) return;
     this.scheduledRenderFrame = requestAnimationFrame(() => {
       this.scheduledRenderFrame = null;
-      // Run inside the Angular zone so rows rendered *during a scroll* get their
-      // template event listeners (click, etc.) registered in the zone —
-      // otherwise interacting with a scrolled-in row wouldn't trigger change
-      // detection. This is ONE coalesced tick per frame (not per row), and
-      // `pruneDetachedViews` keeps the checked-view set bounded.
-      this.ngZone.run(() => this.render());
+      // Run render() OUTSIDE Angular's zone. A full ApplicationRef.tick() on
+      // every scroll frame is the primary FPS bottleneck: even when no rows
+      // change (pure translation), ngZone.run() causes Angular to walk the
+      // entire component tree. Instead we call view.detectChanges() locally
+      // inside renderTemplateIntoContainer for each affected row. Zone entry is
+      // only needed when creating a brand-new embedded view (to zone-patch its
+      // event listeners) — recycled and pooled views were already created inside
+      // zone and their listeners remain zone-aware.
+      this.render();
     });
   }
 
@@ -303,18 +327,52 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   ): void {
     const previous = this.viewByContainer.get(elementContainer);
     if (previous) {
-      this.appRef.detachView(previous);
-      previous.destroy();
-      this.viewByContainer.delete(elementContainer);
+      // Recycle: update the bound context and run local CD instead of
+      // destroying the embedded view and rebuilding the entire row tree.
+      const item = this.getItemForIndex(index);
+      previous.context.$implicit = item;
+      previous.context.item = item;
+      previous.context.index = index;
+      // The core engine wipes elementContainer.textContent when reusing it from
+      // its pool, orphaning the view's root nodes. Re-append them defensively.
+      if (previous.rootNodes.length && previous.rootNodes[0].parentNode !== elementContainer) {
+        for (const node of previous.rootNodes) {
+          elementContainer.appendChild(node);
+        }
+      }
+      previous.detectChanges();
+      return;
     }
 
-    // Clear prior DOM (CeriousScroll may recycle containers).
+    // Try to reuse a pooled view from a container that scrolled out of viewport.
+    const pooled = this.freeViews.pop();
+    if (pooled) {
+      const item = this.getItemForIndex(index);
+      pooled.context.$implicit = item;
+      pooled.context.item = item;
+      pooled.context.index = index;
+      elementContainer.textContent = '';
+      for (const node of pooled.rootNodes) {
+        elementContainer.appendChild(node);
+      }
+      pooled.detectChanges();
+      this.viewByContainer.set(elementContainer, pooled);
+      return;
+    }
+
+    // No prior view for this container: create one.
+    // Enter the Angular zone so the new view's template event listeners
+    // ((click), (input), etc.) are zone-patched. This path runs at most
+    // once per visible row (after that, the view is recycled from the pool).
     elementContainer.textContent = '';
 
     const item = this.getItemForIndex(index);
-    const view = template.createEmbeddedView({ $implicit: item, item, index });
-    this.appRef.attachView(view);
-    view.detectChanges();
+    const view = this.ngZone.run(() => {
+      const v = template.createEmbeddedView({ $implicit: item, item, index });
+      this.appRef.attachView(v);
+      v.detectChanges();
+      return v;
+    });
 
     for (const node of view.rootNodes) {
       elementContainer.appendChild(node);
@@ -329,7 +387,14 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
    * reference changes but the visible indices (and their heights) do not, so row
    * state (focus, selection, open dropdowns) survives the update.
    */
-  private refreshRenderedContent(): void {
+  /**
+   * Re-bind each currently rendered row's context (from the current items/getter)
+   * and run change detection on its embedded view. Use this after mutating row
+   * state in place (e.g. selection flags) or column-level state read by the row
+   * template, when row identity and visible indices have not changed. Cheap
+   * relative to `render()` — does not invoke the engine's measurement pass.
+   */
+  refreshRenderedContent(): void {
     if (!this.hostRef) return;
     const scroller = this.hostRef.scroller;
 
@@ -354,5 +419,10 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
       view.destroy();
     }
     this.viewByContainer.clear();
+    for (const view of this.freeViews) {
+      this.appRef.detachView(view);
+      view.destroy();
+    }
+    this.freeViews.length = 0;
   }
 }
