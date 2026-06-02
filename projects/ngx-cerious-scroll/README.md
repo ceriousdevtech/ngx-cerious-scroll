@@ -1,5 +1,8 @@
 # @ceriousdevtech/ngx-cerious-scroll
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://ceriousdevtech.github.io/ngx-cerious-scroll/)
+
 Angular wrapper for [@ceriousdevtech/cerious-scroll](https://www.npmjs.com/package/@ceriousdevtech/cerious-scroll), providing high-performance virtual scrolling with variable row heights for Angular applications.
 
 ## Features
