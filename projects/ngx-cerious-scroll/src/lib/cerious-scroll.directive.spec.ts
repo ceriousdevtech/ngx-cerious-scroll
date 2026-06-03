@@ -324,11 +324,15 @@ describe('CeriousScrollDirective', () => {
       const getItemSpy = jasmine.createSpy('getItem').and.callFake((index: number) => {
         return { id: index, name: `Item ${index}` };
       });
-      
+
       host.directive.ceriousScrollGetItem = getItemSpy;
       fixture.detectChanges();
-      
-      host.directive.render();
+
+      // The engine skips the renderer callback when the visible row set hasn't
+      // changed, so a second `render()` won't re-invoke the getter for already-
+      // rendered indices. `refreshRenderedContent()` is the documented path to
+      // re-bind the current rows against a new getter/data source.
+      host.directive.refreshRenderedContent();
       fixture.detectChanges();
 
       expect(getItemSpy).toHaveBeenCalled();
