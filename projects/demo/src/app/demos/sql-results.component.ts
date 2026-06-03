@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { NgIf } from '@angular/common';
 
 import { CeriousScrollDirective } from 'ngx-cerious-scroll';
@@ -27,19 +27,23 @@ import { makeResult, SQL_COLUMNS, SQL_TOTAL, sqlStatusClass } from './sql.data';
         <span class="stat">Selected row: <strong>{{ selected === null ? '—' : row(selected).id }}</strong></span>
       </div>
 
-      <div class="sql-head">
-        @for (c of columns; track c) {
-          <div class="sql-head__cell">{{ c }}</div>
-        }
-      </div>
-
       <div
-        class="demo-scroll"
+        class="demo-scroll sql-scroll"
         ceriousScroll
         [ceriousScrollTotalElements]="total"
         [ceriousScrollGetItem]="getItem"
         [ceriousScrollItemTemplate]="rowTpl"
-      ></div>
+        [ceriousScrollOptions]="sqlOptions"
+      >
+        <div class="sql-h-scroll" #hScroll>
+          <div class="sql-head">
+            @for (c of columns; track c) {
+              <div class="sql-head__cell">{{ c }}</div>
+            }
+          </div>
+          <div data-cerious-scroll-content class="sql-scroll-content"></div>
+        </div>
+      </div>
 
       <ng-template #rowTpl let-i="index">
         <div class="sql-row" [class.selected]="selected === i" (click)="selected = i" *ngIf="row(i) as r">
@@ -55,10 +59,16 @@ import { makeResult, SQL_COLUMNS, SQL_TOTAL, sqlStatusClass } from './sql.data';
   `,
 })
 export class SqlResultsComponent {
+  @ViewChild('hScroll', { static: false }) hScroll?: ElementRef<HTMLDivElement>;
+
   readonly total = SQL_TOTAL;
   readonly columns = SQL_COLUMNS;
   protected readonly row = makeResult;
   protected readonly badge = sqlStatusClass;
+
+  readonly sqlOptions = {
+    touch: { enabled: true, getHorizontalScrollTarget: () => this.hScroll?.nativeElement ?? null },
+  };
 
   selected: number | null = null;
   readonly getItem = (i: number): number => i;

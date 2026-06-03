@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-06-03
+
+### Dependencies
+- Bumped peer dependency `@ceriousdevtech/cerious-scroll` to `^1.0.3`. Consumers now get horizontal flick momentum (when `touch.getHorizontalScrollTarget` is supplied) and the new custom scrollbar thumb. The `ceriousScroll` directive already lets host children pass through, so wrapping rows in a custom `overflow-x: auto` container with a sticky header works out of the box — supply a `<div data-cerious-scroll-content></div>` inside it and the engine will render rows into your element.
+
 ## [1.0.2] - 2026-06-01
 
 ### Changed

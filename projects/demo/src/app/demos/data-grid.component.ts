@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { NgIf } from '@angular/common';
 
 import { CeriousScrollDirective } from 'ngx-cerious-scroll';
@@ -36,26 +36,30 @@ import {
         <span class="stat"><strong>{{ order.length.toLocaleString() }}</strong> rows</span>
       </div>
 
-      <div class="grid-head">
-        @for (c of columns; track c.key) {
-          <div class="grid-head__cell" [class.sortable]="c.sortable" (click)="c.sortable && toggleSort(c.key)">
-            {{ c.label }}
-            @if (c.sortable) {
-              <span class="grid-head__sort" [class.active]="sortCol === c.key">
-                {{ sortCol === c.key ? (sortDir === 'asc' ? '▲' : '▼') : '⇅' }}
-              </span>
-            }
-          </div>
-        }
-      </div>
-
       <div
-        class="demo-scroll"
+        class="demo-scroll grid-scroll"
         ceriousScroll
         [ceriousScrollItems]="order"
         [ceriousScrollItemTemplate]="rowTpl"
+        [ceriousScrollOptions]="gridOptions"
         (ceriousScrollViewportChange)="onViewport()"
-      ></div>
+      >
+        <div class="grid-h-scroll" #hScroll>
+          <div class="grid-head">
+            @for (c of columns; track c.key) {
+              <div class="grid-head__cell" [class.sortable]="c.sortable" (click)="c.sortable && toggleSort(c.key)">
+                {{ c.label }}
+                @if (c.sortable) {
+                  <span class="grid-head__sort" [class.active]="sortCol === c.key">
+                    {{ sortCol === c.key ? (sortDir === 'asc' ? '▲' : '▼') : '⇅' }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+          <div data-cerious-scroll-content class="grid-scroll-content"></div>
+        </div>
+      </div>
 
       <ng-template #rowTpl let-item>
         <div class="grid-row" [class.selected]="selected.has(item)" (click)="clickRow(item, $event)">
@@ -87,6 +91,11 @@ import {
 })
 export class DataGridComponent {
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
+  @ViewChild('hScroll', { static: false }) hScroll?: ElementRef<HTMLDivElement>;
+
+  readonly gridOptions = {
+    touch: { enabled: true, getHorizontalScrollTarget: () => this.hScroll?.nativeElement ?? null },
+  };
 
   readonly columns = GRID_COLUMNS;
   protected readonly row = makeRow;
