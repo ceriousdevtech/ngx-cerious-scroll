@@ -65,7 +65,8 @@ describe('CeriousScrollService', () => {
       expect(hostRef.contentElement.style.position).toBe('relative');
       expect(hostRef.contentElement.style.width).toBe('100%');
       expect(hostRef.contentElement.style.height).toBe('100%');
-      expect(hostRef.contentElement.style.overflow).toBe('hidden');
+      expect(hostRef.contentElement.style.overflowY).toBe('clip');
+      expect(hostRef.contentElement.style.overflowX).toBe('auto');
 
       hostRef.destroy();
     });

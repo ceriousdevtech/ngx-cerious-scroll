@@ -193,11 +193,11 @@ describe('CeriousScrollDirective', () => {
     });
 
     it('should clear caches and re-measure when recalculate() is called', () => {
-      spyOn(host.readyScroller, 'clearAllCaches').and.callThrough();
+      spyOn(host.readyScroller, 'refreshVisible').and.callThrough();
 
       const range = host.directive.recalculate();
 
-      expect(host.readyScroller.clearAllCaches).toHaveBeenCalled();
+      expect(host.readyScroller.refreshVisible).toHaveBeenCalled();
       expect(range).toBeTruthy();
     });
 
