@@ -1,6 +1,7 @@
 import type { Type } from '@angular/core';
 
 import { BasicDemoComponent } from './demos/basic-demo.component';
+import { ComparisonComponent } from './demos/comparison.component';
 import { DataGridComponent } from './demos/data-grid.component';
 import { ChatComponent } from './demos/chat.component';
 import { LogViewerComponent } from './demos/log-viewer.component';
@@ -19,6 +20,14 @@ export interface DemoMeta {
 }
 
 export const DEMOS: DemoMeta[] = [
+  {
+    slug: 'comparison',
+    title: 'vs Angular CDK',
+    emoji: '⚔️',
+    blurb:
+      'Side-by-side stress test against @angular/cdk virtual scroll across 5 scenarios: dynamic heights, expanding rows, async images, millions of rows, and continuous updates.',
+    component: ComparisonComponent,
+  },
   {
     slug: 'basic',
     title: 'Basic / Vanilla',

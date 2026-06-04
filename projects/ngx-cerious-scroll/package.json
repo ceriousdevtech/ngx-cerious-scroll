@@ -1,6 +1,6 @@
 {
   "name": "@ceriousdevtech/ngx-cerious-scroll",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -8,10 +8,10 @@
   },
   "peerDependencies": {
     "@angular/common": ">=16.0.0",
-    "@angular/core": ">=16.0.0",
-    "@ceriousdevtech/cerious-scroll": "^1.0.3"
+    "@angular/core": ">=16.0.0"
   },
   "dependencies": {
+    "@ceriousdevtech/cerious-scroll": "^1.0.4",
     "tslib": "^2.3.0"
   },
   "sideEffects": false

@@ -243,11 +243,17 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
    */
   recalculate(): MeasuredViewportRange | null {
     if (!this.hostRef) return null;
-    // Discard the cached heights, then re-render. The engine re-measures and
-    // re-caches the rendered rows during the pass and refreshes the scroll
-    // percentage, so an in-place height change (e.g. expand/collapse) is
-    // reflected in the total content height and scrollbar immediately.
-    this.hostRef.scroller.clearAllCaches();
+    const template = this.ceriousScrollItemTemplate;
+    if (template) {
+      // Re-invoke the renderer for every currently-rendered row so pending
+      // Angular bindings flush into the DOM and the engine re-measures each
+      // row's new height into its cache. Without this, the engine's render
+      // pass skips the renderer for already-rendered indices and falls
+      // through to reading stale offsetHeight.
+      this.hostRef.scroller.refreshVisible((index, elementContainer) => {
+        this.renderTemplateIntoContainer(template, index, elementContainer);
+      });
+    }
     return this.render();
   }
 
