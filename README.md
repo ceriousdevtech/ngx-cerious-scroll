@@ -124,7 +124,8 @@ export class List {
 | `totalElements` | `number` | Total item count. Required if `items` is omitted. |
 | `getItem` | `(index) => TItem` | Lazy item getter for large/sparse datasets. |
 | `itemTemplate` | `TemplateRef<{ $implicit, index }>` | Row template. Alternative to projecting `<ng-template ceriousScrollItem>`. |
-| `options` | `CeriousScrollOptions` | Engine options (keyboard/touch/wheel/scrollbar/etc.). Read once at creation. |
+| `headerTemplate` | `TemplateRef` | Table mode only. `<tr>` of `<th>`s rendered into the engine's `<thead>` (see [Table layout](#table-layout)). |
+| `options` | `CeriousScrollOptions` | Engine options (keyboard/touch/wheel/scrollbar/`layout`/etc.). Read once at creation. |
 | `autoRender` | `boolean` | Re-render on scroll/resize/data changes. Default `true`. |
 
 The row is provided by the projected `<ng-template ceriousScrollItem let-item let-index="index">` or the `itemTemplate` input. Apply `class` / `style` directly to `<cerious-scroll>` — it's a block-level host (set a height!).
@@ -152,6 +153,44 @@ The row is provided by the projected `<ng-template ceriousScrollItem let-item le
 // scroll.recalculate();           // drop cached heights + re-measure (see Notes)
 // scroll.hostRef?.scroller;       // the raw engine
 ```
+
+---
+
+## Table layout
+
+Pass `[ceriousScrollOptions]="{ layout: 'table' }"` to render real `<table>` / `<tr>` / `<td>` rows with a frozen header and native column alignment. The row template returns the row's `<td>` cells; `[ceriousScrollHeaderTemplate]` provides the `<thead>` row (it updates via change detection):
+
+```html
+<div
+  class="my-scroll"
+  ceriousScroll
+  [ceriousScrollTotalElements]="100000"
+  [ceriousScrollGetItem]="getItem"
+  [ceriousScrollItemTemplate]="rowTpl"
+  [ceriousScrollHeaderTemplate]="headerTpl"
+  [ceriousScrollOptions]="{ layout: 'table', table: { tableClassName: 'my-table', autoSizeColumns: true } }"
+></div>
+
+<ng-template #headerTpl>
+  <tr>
+    @for (c of columns; track c.key) { <th>{{ c.label }}</th> }
+  </tr>
+</ng-template>
+
+<!-- Row template roots must be <td>s (no structural directive at the root). -->
+<ng-template #rowTpl let-index>
+  <td>{{ row(index).id }}</td>
+  <td>{{ row(index).name }}</td>
+  <td>{{ row(index).email }}</td>
+</ng-template>
+```
+
+`<cerious-scroll>` exposes the same via `[headerTemplate]` and `<ng-template ceriousScrollItem>`.
+
+- The **header template** renders into the engine's `<thead>` (same `<table>` as the rows → native column alignment, frozen header).
+- The **row template's root nodes must be `<td>`s** (don't wrap them in a structural directive at the root — that hides the cells from the directive's recycle re-append).
+- **`table.autoSizeColumns`** measures column widths once and pins them (auto-sized + stable); or use `table.columnWidths`. Variable row heights work as usual.
+- CSS: `border-collapse: separate` and an **opaque `<thead>` background** (see the core README's [Table Layout](https://github.com/ceriousdevtech/cerious-scroll#-table-layout-layout-table) notes).
 
 ---
 

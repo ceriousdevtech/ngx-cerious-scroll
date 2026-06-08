@@ -51,6 +51,13 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   /** Template used to render each row. */
   @Input() ceriousScrollItemTemplate: TemplateRef<CeriousScrollItemTemplateContext<TItem>> | null = null;
 
+  /**
+   * Table mode only: template rendered into the engine's `<thead>` (a `<tr>` of
+   * `<th>`s). It lives in the same `<table>` as the rows, so columns align
+   * natively. Updates via change detection like the rows.
+   */
+  @Input() ceriousScrollHeaderTemplate: TemplateRef<unknown> | null = null;
+
   /** Options passed to `new CeriousScroll(...)`. */
   @Input() ceriousScrollOptions: CeriousScrollOptions = {};
 
@@ -76,6 +83,10 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   // component tree on fast scrolls (where the engine's element pool wipes
   // textContent on reused containers, so view rootNodes get orphaned).
   private readonly freeViews: EmbeddedViewRef<CeriousScrollItemTemplateContext<TItem>>[] = [];
+
+  // Table mode: the embedded view of the declarative header, rendered into the
+  // engine's <thead>.
+  private headerView: EmbeddedViewRef<unknown> | null = null;
 
   constructor(
     private readonly host: ElementRef<HTMLElement>,
@@ -138,6 +149,8 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     this.viewportSub = null;
 
     this.destroyAllViews();
+    this.headerView?.destroy();
+    this.headerView = null;
 
     this.hostRef?.destroy();
     this.hostRef = null;
@@ -296,7 +309,24 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     const container = this.host.nativeElement;
     const total = coerceTotalElements(this.ceriousScrollTotalElements, this.ceriousScrollItems?.length ?? null);
 
-    this.hostRef = this.cerious.createHost(container, total, this.ceriousScrollOptions, this.ngZone, () => {
+    // Table mode: capture the engine-created <thead> so we can render the
+    // declarative header template into it (and still run any user header hook).
+    let options = this.ceriousScrollOptions;
+    if (options.layout === 'table' && this.ceriousScrollHeaderTemplate) {
+      const userHeader = options.table?.header;
+      options = {
+        ...options,
+        table: {
+          ...options.table,
+          header: (thead: HTMLTableSectionElement) => {
+            userHeader?.(thead);
+            this.mountHeader(thead);
+          },
+        },
+      };
+    }
+
+    this.hostRef = this.cerious.createHost(container, total, options, this.ngZone, () => {
       // Coalesce scroll-driven renders to one per frame (the native scrollbar
       // can fire many scroll events between paints).
       if (this.ceriousScrollAutoRender) this.scheduleRender();
@@ -314,6 +344,24 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     if (this.ceriousScrollAutoRender) {
       queueMicrotask(() => this.render());
     }
+  }
+
+  /**
+   * Render the declarative header template into the engine's <thead>. One
+   * embedded view, created inside the zone (so the header's event bindings are
+   * zone-patched), its root nodes appended directly into the <thead>.
+   */
+  private mountHeader(thead: HTMLElement): void {
+    if (!this.ceriousScrollHeaderTemplate) return;
+    this.headerView?.destroy();
+    const view = this.ngZone.run(() => {
+      const v = this.ceriousScrollHeaderTemplate!.createEmbeddedView({});
+      this.appRef.attachView(v);
+      v.detectChanges();
+      return v;
+    });
+    for (const node of view.rootNodes) thead.appendChild(node);
+    this.headerView = view;
   }
 
   private getItemForIndex(index: number): TItem {

@@ -24,6 +24,7 @@ import {
         'ceriousScrollItems: items',
         'ceriousScrollGetItem: getItem',
         'ceriousScrollItemTemplate: itemTemplate',
+        'ceriousScrollHeaderTemplate: headerTemplate',
         'ceriousScrollOptions: options',
         'ceriousScrollAutoRender: autoRender',
       ],

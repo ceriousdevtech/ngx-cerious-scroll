@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-06-08
+
+### Added
+- **Table mode support** (`[ceriousScrollOptions]="{ layout: 'table' }"`). The row template's `<td>` cells render straight into the engine's `<tr>` (the directive already appends template root nodes directly and re-appends them after the engine recycles a container, so no wrapper is needed).
+- **`[ceriousScrollHeaderTemplate]`** input. Declarative header template (a `<tr>` of `<th>`s) rendered into the engine's `<thead>` as an embedded view — same `<table>` as the rows, so columns align natively, and it updates via change detection.
+
+### Dependencies
+- Bumped `@ceriousdevtech/cerious-scroll` to `^1.0.6`: native table layout, `table.autoSizeColumns` (auto-sized but stable columns), trackpad-only wheel inertia, overlay-scrollbar gutter fix, and exact bottom snap.
+
 ## [1.0.5] - 2026-06-04
 
 ### Dependencies

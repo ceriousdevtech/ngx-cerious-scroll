@@ -3,6 +3,7 @@ import type { Type } from '@angular/core';
 import { BasicDemoComponent } from './demos/basic-demo.component';
 import { ComparisonComponent } from './demos/comparison.component';
 import { DataGridComponent } from './demos/data-grid.component';
+import { TableComponent } from './demos/table.component';
 import { ChatComponent } from './demos/chat.component';
 import { LogViewerComponent } from './demos/log-viewer.component';
 import { CodeViewerComponent } from './demos/code-viewer.component';
@@ -42,6 +43,13 @@ export const DEMOS: DemoMeta[] = [
     emoji: '📊',
     blurb: 'Multi-column grid with sortable headers, live search, and Ctrl/Cmd multi-select.',
     component: DataGridComponent,
+  },
+  {
+    slug: 'table',
+    title: 'Native Table',
+    emoji: '🧮',
+    blurb: "Real <table>/<tr>/<td> rows via layout:'table' — frozen header, aligned columns, single tbody transform. Virtualizes millions of rows with ~25 DOM rows.",
+    component: TableComponent,
   },
   {
     slug: 'chat',
