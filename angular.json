@@ -63,6 +63,9 @@
               "projects/demo/src/assets"
             ],
             "styles": [
+              "node_modules/primeng/resources/themes/lara-dark-cyan/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "node_modules/primeicons/primeicons.css",
               "projects/demo/src/styles.scss"
             ],
             "scripts": []
@@ -123,6 +126,9 @@
               "projects/demo/src/assets"
             ],
             "styles": [
+              "node_modules/primeng/resources/themes/lara-dark-cyan/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "node_modules/primeicons/primeicons.css",
               "projects/demo/src/styles.scss"
             ],
             "scripts": []

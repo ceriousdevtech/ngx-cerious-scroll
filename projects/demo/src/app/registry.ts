@@ -6,6 +6,7 @@ import { DataGridComponent } from './demos/data-grid.component';
 import { TableComponent } from './demos/table.component';
 import { TableHeightsComponent } from './demos/table-heights.component';
 import { TableStreamComponent } from './demos/table-stream.component';
+import { PrimengTableComponent } from './demos/primeng-table.component';
 import { ChatComponent } from './demos/chat.component';
 import { LogViewerComponent } from './demos/log-viewer.component';
 import { CodeViewerComponent } from './demos/code-viewer.component';
@@ -66,6 +67,14 @@ export const DEMOS: DemoMeta[] = [
     emoji: '📡',
     blurb: 'Inject variable-height rows at the TOP of the stream — live telemetry / chat-history backfill — and watch the scroll position stay cleanly anchored to the row you were reading.',
     component: TableStreamComponent,
+  },
+  {
+    slug: 'primeng-table',
+    title: 'PrimeNG Table',
+    emoji: '🧩',
+    blurb:
+      "A real PrimeNG <p-table> header — sortable columns, per-column filter menus, column resize & reorder, backed by PrimeNG's own FilterService — with Cerious-Scroll as the scroll engine. Scrolls up to 5,000,000 rows index-derived (~25 in the DOM, no dataset in memory); sort/filter materialize the full set on demand.",
+    component: PrimengTableComponent,
   },
   {
     slug: 'chat',

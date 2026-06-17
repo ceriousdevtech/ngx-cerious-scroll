@@ -1734,3 +1734,93 @@ body {
 }
 .cs-stream-page .live-dot.on { background: #f85149; animation: cs-pulse 1.1s ease-in-out infinite; }
 @keyframes cs-pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+/* ============ PrimeNG Table · Cerious-Scroll engine demo ============ */
+/* A real PrimeNG <p-table> header (with empty value) sits above a Cerious-Scroll
+   virtualized body. The two are SEPARATE <table>s; they stay column-aligned
+   because both are `table-layout: fixed; width: 100%` and the component pushes
+   the header's measured <th> widths into the body's <colgroup> (columnWidths).
+   Colors reference the active PrimeNG (lara-dark) theme variables so the
+   CS-rendered body matches PrimeNG's chrome. */
+
+.cs-pt-page .cs-pt-headerwrap {
+  flex-shrink: 0;
+  /* Sit above body rows that translate up under the header. */
+  position: relative;
+  z-index: 5;
+}
+
+/* Force the PrimeNG header table into fixed layout so its column widths are the
+   single source of truth the body mirrors. */
+.cs-pt-page .cs-pt-header-table .p-datatable-table {
+  table-layout: fixed;
+  width: 100%;
+}
+.cs-pt-page .cs-pt-header-table .p-datatable-thead > tr > th {
+  white-space: nowrap;
+}
+.cs-pt-page .cs-pt-th {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.cs-pt-page .cs-pt-th__label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Cerious-Scroll body ---- */
+.cs-pt-page .cs-pt-scroll {
+  flex: 1;
+  min-height: 0;
+}
+.cs-pt-page .cs-pt-scroll [data-cerious-scroll-content] { overflow-x: hidden; }
+
+.cs-pt-page .cs-pt-body-table {
+  /* separate borders travel with the translating <tbody> (collapsed borders are
+     painted by the static <table> and would not move). */
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  font-variant-numeric: tabular-nums;
+}
+/* The engine still creates a (here unused) <thead>; the visible header is the
+   PrimeNG table above. */
+.cs-pt-page .cs-pt-body-thead { display: none; }
+
+.cs-pt-page .cs-pt-body-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--surface-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.cs-pt-page .cs-pt-body-tbody tr:hover { background: var(--surface-hover); }
+
+.cs-pt-page .cs-num { text-align: right; font-variant-numeric: tabular-nums; }
+.cs-pt-page .cs-center { text-align: center; }
+
+/* Selection column (leading checkbox) — header + body. */
+.cs-pt-page .cs-pt-check-col,
+.cs-pt-page td.cs-pt-check {
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.cs-pt-page td.cs-pt-check .p-checkbox,
+.cs-pt-page .cs-pt-check-col .p-checkbox { vertical-align: middle; }
+
+/* The global-search input matches the toolbar chrome rather than full PrimeNG
+   surface, so it blends with the dark gallery. */
+.cs-pt-page .demo-toolbar input[pInputText] {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 7px 11px;
+}
