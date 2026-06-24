@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2026-06-24
+
+### Changed
+- **A change in the item count now grows/shrinks the dataset in place instead of recreating the engine.** The directive calls `updateTotalElements()` (propagating the new count to navigation bounds, the scrollbar track, the renderer, and the height cache) rather than recreating the scroller. A live append/prepend therefore keeps the scroll position and any in-progress scrollbar drag alive, and an appended dataset keeps a stable bottom index instead of a bouncing tail. A shrink that leaves the position past the new end is clamped, and the scrollbar thumb is re-synced after the lengthened track re-renders. The emitted `ceriousScrollReady` instance is now stable across count changes (no public API change).
+- Updated the core engine dependency to `@ceriousdevtech/cerious-scroll@^1.0.8` (native-scrollbar drag rendering is now coalesced to one render per frame, with no per-row layout thrash on fast drags).
+
 ## [1.0.7] - 2026-06-11
 
 ### Changed

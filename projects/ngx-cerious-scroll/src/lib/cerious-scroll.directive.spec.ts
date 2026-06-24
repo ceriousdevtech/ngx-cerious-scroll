@@ -160,19 +160,21 @@ describe('CeriousScrollDirective', () => {
       expect(host.readyScroller.totalElements).toBe(100);
     });
 
-    it('should recreate the scroller (not just clear caches) when the item count changes', () => {
+    it('should update the dataset IN PLACE (no recreate) when the item count changes', () => {
       const originalScroller = host.readyScroller;
       expect(originalScroller).toBeTruthy();
 
-      // 3 items → 1 item is a count change.  The directive must recreate the
-      // engine entirely so the ViewportRenderer's internal totalElements bound
-      // stays consistent with the new count (it is set by value at construction
-      // and cannot be patched from outside).
+      // 3 items → 1 item is a count change. The directive grows/shrinks the
+      // dataset in place via updateTotalElements(), which propagates the new
+      // count to every subsystem — including the ViewportRenderer's own copy of
+      // totalElements (the stale-bound that previously forced a full recreate).
+      // Keeping the same engine instance preserves the scroll position and any
+      // in-progress scrollbar drag.
       host.items = [{ id: 99, name: 'Changed' }];
       fixture.detectChanges();
 
-      // A new scroller instance should have been emitted via ceriousScrollReady.
-      expect(host.readyScroller).not.toBe(originalScroller);
+      // The SAME scroller instance is reused, now reporting the new count.
+      expect(host.readyScroller).toBe(originalScroller);
       expect(host.readyScroller.totalElements).toBe(1);
     });
 

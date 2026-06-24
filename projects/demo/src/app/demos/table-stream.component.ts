@@ -10,12 +10,13 @@ import {
   type StreamEvent,
 } from './table-stream.data';
 
-// FIXED element count so the engine is never recreated on a prepend (growing
-// totalElements would tear down + rebuild the whole scroller every inject — that
-// read as scrollbar thrash). Content slides under a fixed window instead:
-// index i shows seq = baseSeq - i; "prepending k" grows baseSeq by k while we
-// shift the scroll position by k to hold the anchor.
-const TOTAL = 2000;
+// The dataset GROWS in place as events arrive (updateTotalElements, no recreate
+// — an in-progress scrollbar drag survives), so the oldest event keeps a STABLE
+// bottom index: scrolling to the bottom doesn't bounce. Content is index-
+// addressed — index i shows seq = baseSeq - i (index 0 = newest = baseSeq,
+// index total-1 = oldest = seq 0) — and "prepending k" grows both total and
+// baseSeq by k while we shift the anchor by k to hold position.
+const INITIAL_TOTAL = 2000;
 
 @Component({
   selector: 'demo-table-stream',
@@ -113,12 +114,12 @@ export class TableStreamComponent implements OnDestroy {
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
 
   readonly columns = STREAM_COLUMNS;
-  readonly total = TOTAL;          // fixed — never grows, so the engine is not recreated
-  baseSeq = TOTAL - 1;
+  total = INITIAL_TOTAL;           // grows in place as events arrive
+  baseSeq = INITIAL_TOTAL - 1;
   freshMinSeq = -1;
   follow = false;
   newAbove = 0;
-  seen = TOTAL;
+  seen = INITIAL_TOTAL;
   stat = 'scroll down, then inject to test anchoring';
   live = false;
 
@@ -176,22 +177,30 @@ export class TableStreamComponent implements OnDestroy {
     const anchorOff = eng.scrollOffset;
     const wasAtTop = eng.currentElement === 0 && eng.scrollOffset <= 0;
 
+    const nextTotal = eng.totalElements + k;
     this.baseSeq += k;                          // k newer events enter at the top
     this.freshMinSeq = this.baseSeq - k + 1;    // mark the just-arrived batch NEW
+
+    // Grow the dataset IN PLACE — no recreate, so a scrollbar drag survives and
+    // the oldest event keeps a stable bottom index (no bouncing tail).
+    eng.updateTotalElements(nextTotal);
 
     if (this.follow) {
       this.scroller?.jumpToElement(0);          // ride the newest
     } else {
-      // Hold the same logical row (now at index anchorEl + k). jumpToElement syncs
-      // the scrollbar thumb; restore scrollOffset for a crisp sub-row hold;
-      // recalculate re-renders visible rows with the new baseSeq content + heights.
-      const target = Math.min(anchorEl + k, TOTAL - 1);
+      // Hold the same logical row (now at index anchorEl + k). jumpToElement
+      // re-anchors; restore scrollOffset for a crisp sub-row hold; recalculate
+      // re-renders visible rows with the new baseSeq content + heights.
+      const target = Math.min(anchorEl + k, nextTotal - 1);
       this.scroller?.jumpToElement(target);
       if (anchorOff > 0) eng.scrollOffset = anchorOff;
       if (!wasAtTop) this.newAbove += k;
     }
     this.scroller?.recalculate();
-    this.seen = this.baseSeq + 1;
+    // The track just got longer — re-pin the thumb (defers if mid-drag).
+    eng.syncScrollbar();
+    this.total = nextTotal;                     // keep the input in sync
+    this.seen = nextTotal;
     this.refreshStat();
   }
 

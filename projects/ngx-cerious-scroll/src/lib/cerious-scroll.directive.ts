@@ -107,17 +107,22 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
       const countChanged = this.hostRef.scroller.totalElements !== total;
 
       if (countChanged) {
-        // The dataset size changed: the ViewportRenderer stores its own copy of
-        // totalElements (set by value at construction) so patching the engine's
-        // public property alone leaves the renderer's internal bound stale.  The
-        // renderer would then use the old count for its viewport-fill loop and
-        // bottom-boundary scan, producing phantom renders at out-of-bounds
-        // indices (undefined items → 0-height rows → the fill loop never
-        // satisfies its height condition → hundreds of renderer callbacks).
-        // Recreating the engine gives both the engine and the renderer a fresh,
-        // consistent count.  ensureInitialized() schedules the first render via
-        // queueMicrotask, which runs after the current CD cycle completes.
-        this.recreate();
+        // Grow/shrink the dataset IN PLACE — no recreate. updateTotalElements
+        // propagates the new count to every subsystem, INCLUDING the
+        // ViewportRenderer's own copy of totalElements (it used to go stale,
+        // which is exactly why this recreated: the renderer kept the old count
+        // for its viewport-fill loop and bottom scan, producing phantom
+        // out-of-bounds renders). In place keeps the scroll position and an
+        // in-progress scrollbar drag alive, and a growing dataset keeps a stable
+        // bottom index (no bouncing tail). The track lengthens, so re-sync the
+        // thumb afterwards.
+        this.hostRef.scroller.updateTotalElements(total);
+        // A shrink can leave the position past the new end — clamp it.
+        if (this.hostRef.scroller.currentElement > total - 1) {
+          this.hostRef.scroller.jumpToElement(total - 1);
+        }
+        if (this.ceriousScrollAutoRender) this.render();
+        this.hostRef.scroller.syncScrollbar();
       } else if (this.ceriousScrollAutoRender) {
         // Same count, new data reference (e.g. an immutable edit or a sort that
         // happens to keep the same length). The engine reuses the DOM element it
