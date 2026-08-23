@@ -8,6 +8,7 @@ import { TableHeightsComponent } from './demos/table-heights.component';
 import { TableStreamComponent } from './demos/table-stream.component';
 import { MasonryComponent } from './demos/masonry.component';
 import { MasonryDynamicComponent } from './demos/masonry-dynamic.component';
+import { MasonryGalleryComponent } from './demos/masonry-gallery.component';
 import { PrimengTableComponent } from './demos/primeng-table.component';
 import { ChatComponent } from './demos/chat.component';
 import { LogViewerComponent } from './demos/log-viewer.component';
@@ -83,6 +84,13 @@ export const DEMOS: DemoMeta[] = [
     emoji: '🪜',
     blurb: 'Unpredictable Angular template content measured from the DOM with constant-time far jumps and locally deterministic placement.',
     component: MasonryDynamicComponent,
+  },
+  {
+    slug: 'masonry-gallery',
+    title: 'Masonry · Real Content',
+    emoji: '🖼️',
+    blurb: 'Network images, a composed Angular template and a carousel per card — virtualized. Shows the patterns recycled cards demand: reserved media space, enforced card height, and state keyed by index.',
+    component: MasonryGalleryComponent,
   },
   {
     slug: 'primeng-table',
