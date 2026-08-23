@@ -15,13 +15,14 @@ import {
 } from '@angular/core';
 
 import {
-  type CeriousScrollOptions,
+  type CeriousScrollOptions as CoreCeriousScrollOptions,
   type ElementRenderer,
   type MeasuredViewportRange,
 } from '@ceriousdevtech/cerious-scroll';
 import { Subscription } from 'rxjs';
 
 import type { CeriousViewportChangeDetail } from './cerious-scroll.types';
+import type { CeriousScrollOptions } from './cerious-scroll.types';
 import type { CeriousScrollItemTemplateContext } from './cerious-scroll-item-template.directive';
 import { type CeriousScrollHostRef, CeriousScrollService } from './cerious-scroll.service';
 
@@ -76,6 +77,10 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   private hostRef: CeriousScrollHostRef | null = null;
   private viewportSub: Subscription | null = null;
   private scheduledRenderFrame: number | null = null;
+  // Incremented by the core-owned Masonry renderer whenever it mounts a probe
+  // or visible card. Unlike row mode, those calls do not flow through the
+  // ElementRenderer passed to renderViewport().
+  private masonryRendererEpoch = 0;
 
   private readonly viewByContainer = new Map<HTMLElement, EmbeddedViewRef<CeriousScrollItemTemplateContext<TItem>>>();
   // Pool of views detached because their container left the viewport. Reusing
@@ -87,6 +92,11 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   // Table mode: the embedded view of the declarative header, rendered into the
   // engine's <thead>.
   private headerView: EmbeddedViewRef<unknown> | null = null;
+
+  /** Underlying core engine instance, or null before initialization. */
+  get scroller(): CeriousScrollHostRef['scroller'] | null {
+    return this.hostRef?.scroller ?? null;
+  }
 
   constructor(
     private readonly host: ElementRef<HTMLElement>,
@@ -104,9 +114,20 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
 
     if (changes['ceriousScrollItems'] || changes['ceriousScrollTotalElements']) {
       const total = coerceTotalElements(this.ceriousScrollTotalElements, this.ceriousScrollItems?.length ?? null);
-      const countChanged = this.hostRef.scroller.totalElements !== total;
+      const masonryMode = this.ceriousScrollOptions.layout === 'masonry';
+      const currentCount = masonryMode
+        ? this.hostRef.scroller.itemCount
+        : this.hostRef.scroller.totalElements;
+      const countChanged = currentCount !== total;
 
       if (countChanged) {
+        if (masonryMode) {
+          // Masonry's renderer owns card-count-derived segment state. Recreate
+          // it when the dataset size changes rather than updating segment count
+          // through the row-oriented updateTotalElements API.
+          this.recreate();
+          return;
+        }
         // Grow/shrink the dataset IN PLACE — no recreate. updateTotalElements
         // propagates the new count to every subsystem, INCLUDING the
         // ViewportRenderer's own copy of totalElements (it used to go stale,
@@ -187,9 +208,12 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
       this.renderTemplateIntoContainer(template, index, elementContainer);
     };
 
+    const masonryMode = this.ceriousScrollOptions.layout === 'masonry';
+    const masonryEpochBefore = this.masonryRendererEpoch;
     const range = this.hostRef.scroller.renderViewport(height, contentContainer, renderer);
+    const masonryInvocations = this.masonryRendererEpoch - masonryEpochBefore;
 
-    if (rendererInvocations === 0) {
+    if (rendererInvocations === 0 && (!masonryMode || masonryInvocations === 0)) {
       // Viewport didn't change — skip the prune walk and the (potentially
       // zone-entering) emit.
       return range;
@@ -214,10 +238,17 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
   private pruneDetachedViews(): void {
     if (!this.hostRef || this.viewByContainer.size === 0) return;
     const scroller = this.hostRef.scroller;
+    const masonryMode = this.ceriousScrollOptions.layout === 'masonry';
     const active = new Set<HTMLElement>();
-    for (const index of scroller.getRenderedIndices()) {
-      const el = scroller.getRenderedElement(index);
-      if (el) active.add(el);
+    if (masonryMode) {
+      this.host.nativeElement
+        .querySelectorAll<HTMLElement>('[data-element-index]')
+        .forEach((el) => active.add(el));
+    } else {
+      for (const index of scroller.getRenderedIndices()) {
+        const el = scroller.getRenderedElement(index);
+        if (el) active.add(el);
+      }
     }
     for (const [container, view] of this.viewByContainer) {
       if (!active.has(container)) {
@@ -282,6 +313,13 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     return this.render();
   }
 
+  /** Masonry mode only: jump directly to a card index, then render. */
+  jumpToItem(index: number, screenOffset = 0): MeasuredViewportRange | null {
+    if (!this.hostRef) return null;
+    this.hostRef.scroller.jumpToItem(index, screenOffset);
+    return this.render();
+  }
+
   /** Scroll to a percentage (0..100), then render. */
   scrollToPercentage(percentage: number): MeasuredViewportRange | null {
     if (!this.hostRef) return null;
@@ -316,7 +354,30 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
 
     // Table mode: capture the engine-created <thead> so we can render the
     // declarative header template into it (and still run any user header hook).
-    let options = this.ceriousScrollOptions;
+    let options: CoreCeriousScrollOptions;
+    if (this.ceriousScrollOptions.layout === 'masonry') {
+      if (!this.ceriousScrollOptions.masonry) {
+        throw new Error("CeriousScrollDirective: layout 'masonry' requires `ceriousScrollOptions.masonry`.");
+      }
+      options = {
+        ...this.ceriousScrollOptions,
+        masonry: {
+          ...this.ceriousScrollOptions.masonry,
+          renderItem: (index, element) => {
+            this.masonryRendererEpoch++;
+            const template = this.ceriousScrollItemTemplate;
+            if (!template) return;
+            if (element.dataset['ceriousMasonry'] === 'probe') {
+              this.renderProbe(template, index, element);
+            } else {
+              this.renderTemplateIntoContainer(template, index, element);
+            }
+          },
+        },
+      };
+    } else {
+      options = this.ceriousScrollOptions as CoreCeriousScrollOptions;
+    }
     if (options.layout === 'table' && this.ceriousScrollHeaderTemplate) {
       const userHeader = options.table?.header;
       options = {
@@ -377,6 +438,30 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     if (!items) return undefined as TItem;
 
     return items[index];
+  }
+
+  private renderProbe(
+    template: TemplateRef<CeriousScrollItemTemplateContext<TItem>>,
+    index: number,
+    container: HTMLElement
+  ): void {
+    const item = this.getItemForIndex(index);
+    const view = this.ngZone.runOutsideAngular(() => {
+      const v = template.createEmbeddedView({ $implicit: item, item, index });
+      v.detectChanges();
+      return v;
+    });
+    for (const node of view.rootNodes) container.appendChild(node);
+
+    // Measurement probes are deliberately NOT attached to ApplicationRef:
+    // they are disposable, non-interactive markup and local detectChanges() is
+    // enough to populate their DOM synchronously. Attaching each probe inside
+    // Angular's zone turns dynamic scrolling into repeated application-wide
+    // change-detection work. The core reads offsetHeight immediately after this
+    // callback and clears the probe, so destroy the isolated view afterwards.
+    queueMicrotask(() => {
+      view.destroy();
+    });
   }
 
   private renderTemplateIntoContainer(

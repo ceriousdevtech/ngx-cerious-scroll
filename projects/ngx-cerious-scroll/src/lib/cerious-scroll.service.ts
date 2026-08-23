@@ -42,7 +42,9 @@ export class CeriousScrollService {
     ngZone: NgZone,
     onScrollHook?: () => void
   ): CeriousScrollHostRef {
-    const contentElement = ensureContentElement(container);
+    const contentElement = options.layout === 'masonry'
+      ? container
+      : ensureContentElement(container);
     let scroller!: CeriousScroll;
 
     ngZone.runOutsideAngular(() => {
@@ -65,10 +67,10 @@ export class CeriousScrollService {
       contentElement,
       viewportChanges$,
       destroy: () => {
-        // Remove rendered rows content first; keep container stable.
-        contentElement.textContent = '';
         scroller.detachScrollbar(container);
         scroller.dispose();
+        // Remove rendered content after the engine has detached its own DOM.
+        contentElement.textContent = '';
       },
     };
   }

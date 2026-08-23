@@ -6,6 +6,8 @@ import { DataGridComponent } from './demos/data-grid.component';
 import { TableComponent } from './demos/table.component';
 import { TableHeightsComponent } from './demos/table-heights.component';
 import { TableStreamComponent } from './demos/table-stream.component';
+import { MasonryComponent } from './demos/masonry.component';
+import { MasonryDynamicComponent } from './demos/masonry-dynamic.component';
 import { PrimengTableComponent } from './demos/primeng-table.component';
 import { ChatComponent } from './demos/chat.component';
 import { LogViewerComponent } from './demos/log-viewer.component';
@@ -67,6 +69,20 @@ export const DEMOS: DemoMeta[] = [
     emoji: '📡',
     blurb: 'Inject variable-height rows at the TOP of the stream — live telemetry / chat-history backfill — and watch the scroll position stay cleanly anchored to the row you were reading.',
     component: TableStreamComponent,
+  },
+  {
+    slug: 'masonry',
+    title: 'Masonry · Canonical',
+    emoji: '🧱',
+    blurb: 'Responsive Angular card columns with computed heights, reproducible placement, and only the visible cards mounted.',
+    component: MasonryComponent,
+  },
+  {
+    slug: 'masonry-dynamic',
+    title: 'Masonry · Dynamic',
+    emoji: '🪜',
+    blurb: 'Unpredictable Angular template content measured from the DOM with constant-time far jumps and locally deterministic placement.',
+    component: MasonryDynamicComponent,
   },
   {
     slug: 'primeng-table',

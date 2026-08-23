@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-22
+
+### Added
+- Declarative canonical and dynamic Masonry support through the existing Angular item template.
+- Dynamic-height probe rendering with short-lived embedded views that are destroyed after synchronous measurement.
+- `jumpToItem(index, screenOffset?)` on `CeriousScrollDirective`; the existing `CeriousScrollOptions` export now accepts wrapper-owned Masonry rendering.
+- Canonical-height and dynamic-height Angular demo routes.
+
+### Changed
+- Updated `@ceriousdevtech/cerious-scroll` to `^1.1.0`.
+- Masonry card-count changes recreate card-derived segment state; list and table count changes continue updating in place.
+- Dynamic Masonry measurement probes now use isolated local change detection instead of entering Angular's zone or joining `ApplicationRef`; unchanged Masonry frames also skip DOM pruning.
+
 ## [1.0.8] - 2026-06-24
 
 ### Changed

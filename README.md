@@ -125,7 +125,7 @@ export class List {
 | `getItem` | `(index) => TItem` | Lazy item getter for large/sparse datasets. |
 | `itemTemplate` | `TemplateRef<{ $implicit, index }>` | Row template. Alternative to projecting `<ng-template ceriousScrollItem>`. |
 | `headerTemplate` | `TemplateRef` | Table mode only. `<tr>` of `<th>`s rendered into the engine's `<thead>` (see [Table layout](#table-layout)). |
-| `options` | `CeriousScrollOptions` | Engine options (keyboard/touch/wheel/scrollbar/`layout`/etc.). Read once at creation. |
+| `options` | `CeriousScrollOptions` | Engine options. Masonry's DOM callback is supplied by the directive. Read once at creation. |
 | `autoRender` | `boolean` | Re-render on scroll/resize/data changes. Default `true`. |
 
 The row is provided by the projected `<ng-template ceriousScrollItem let-item let-index="index">` or the `itemTemplate` input. Apply `class` / `style` directly to `<cerious-scroll>` — it's a block-level host (set a height!).
@@ -147,6 +147,7 @@ The row is provided by the projected `<ng-template ceriousScrollItem let-item le
 ```ts
 @ViewChild(CeriousScrollDirective) scroll!: CeriousScrollDirective;
 // scroll.jumpToElement(500);
+// scroll.jumpToItem(500);          // Masonry cards
 // scroll.scrollToPercentage(50);
 // scroll.reset();
 // scroll.render();
@@ -155,6 +156,44 @@ The row is provided by the projected `<ng-template ceriousScrollItem let-item le
 ```
 
 ---
+
+## Masonry layout
+
+Pass `layout: 'masonry'` and the directive renders your Angular template into
+the engine's cards. Do not provide the core DOM `renderItem` callback:
+
+```html
+<div
+  class="gallery"
+  ceriousScroll
+  [ceriousScrollTotalElements]="photos.length"
+  [ceriousScrollGetItem]="getPhoto"
+  [ceriousScrollItemTemplate]="card"
+  [ceriousScrollOptions]="masonryOptions"
+></div>
+
+<ng-template #card let-photo let-index="index">
+  <app-photo-card [photo]="photo" [index]="index" />
+</ng-template>
+```
+
+```ts
+readonly masonryOptions: CeriousScrollOptions = {
+  layout: 'masonry',
+  masonry: {
+    getItemHeight: (_index, width) => width * 0.75 + 48,
+    targetColumnWidth: 280,
+    gap: 16,
+  },
+};
+```
+
+Omit `getItemHeight` for dynamic measurement. Angular creates a short-lived
+embedded view for the offscreen probe and destroys it after the synchronous
+height read; visible cards retain normal bindings and events.
+
+Use `directive.jumpToItem(index, screenOffset?)` for card navigation. The demo
+gallery includes canonical and dynamic Masonry pages.
 
 ## Table layout
 
@@ -202,8 +241,8 @@ Pass `[ceriousScrollOptions]="{ layout: 'table' }"` to render real `<table>` / `
 - **`options` are read at creation.** Changing `options` after init has no
   effect; recreate the host (e.g. with `*ngIf` toggling) to apply new engine
   options.
-- **Changing the item count** recreates the engine internally (scroll position
-  is preserved). Mutating items without changing the count just re-renders the
+- **Changing the item count** updates lists/tables in place. Masonry recreates
+  its card-count-derived segment layout. Mutating items without changing the count just re-renders the
   content in place (cheap; Angular patches each row, so focus/selection survive)
   — it does **not** discard cached heights, so editable grids that produce a new
   `items` array on every edit don't trigger a full viewport re-measure.

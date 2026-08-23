@@ -233,6 +233,7 @@ Both the component and directive expose:
 |--------|-------------|
 | `render()` | Trigger a manual render pass. |
 | `recalculate()` | Discard all cached row heights and re-measure the viewport. |
+| `jumpToItem(index, screenOffset?)` | Jump to a card in Masonry mode. |
 
 **When to call `recalculate()`:** only when the heights of rows you've *already
 rendered* change without their indices changing — e.g. a global font/density
@@ -266,6 +267,26 @@ Usage in templates:
   {{ index }}: {{ item.name }}
 </ng-template>
 ```
+
+## Masonry Layout
+
+Use `layout: 'masonry'` with the normal Angular item template. The directive
+supplies the core engine's DOM renderer internally:
+
+```ts
+readonly options: CeriousScrollOptions = {
+  layout: 'masonry',
+  masonry: {
+    getItemHeight: (_index, width) => width * 0.75 + 48,
+    targetColumnWidth: 280,
+    gap: 16,
+  },
+};
+```
+
+Supplying `getItemHeight` gives canonical, reproducible placement. Omit it for
+dynamic DOM-measured cards. Use `jumpToItem()` rather than `jumpToElement()` for
+card navigation.
 
 ## Table Layout
 

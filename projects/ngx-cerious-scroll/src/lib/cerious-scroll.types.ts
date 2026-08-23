@@ -1,4 +1,16 @@
-import type { ScrollResult } from '@ceriousdevtech/cerious-scroll';
+import type {
+  CeriousScrollOptions as CoreCeriousScrollOptions,
+  MasonryOptions,
+  ScrollResult,
+} from '@ceriousdevtech/cerious-scroll';
+
+/** Engine options adapted for Angular-owned Masonry rendering. */
+export type CeriousScrollOptions = Omit<CoreCeriousScrollOptions, 'masonry'> & {
+  masonry?: Omit<MasonryOptions, 'renderItem'> & {
+    /** Accepted for backward compatibility; Angular supplies the active renderer. */
+    renderItem?: MasonryOptions['renderItem'];
+  };
+};
 
 /**
  * Detail payload for the `cerious-viewport-change` CustomEvent dispatched by `@ceriousdevtech/cerious-scroll`.

@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewChild } from '@angular/core';
+import { ApplicationRef, Component, TemplateRef, ViewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CeriousScrollDirective } from './cerious-scroll.directive';
@@ -111,7 +111,82 @@ class TestGetItemComponent {
   };
 }
 
+@Component({
+  standalone: true,
+  imports: [CeriousScrollDirective],
+  template: `
+    <div ceriousScroll [ceriousScrollTotalElements]="100" [ceriousScrollGetItem]="getItem"
+      [ceriousScrollItemTemplate]="tpl" [ceriousScrollOptions]="options"
+      [ceriousScrollAutoRender]="false" style="width: 400px; height: 600px"></div>
+    <ng-template #tpl let-index><div class="masonry-test-card">Card {{ index }}</div></ng-template>
+  `,
+})
+class TestMasonryComponent {
+  @ViewChild(CeriousScrollDirective, { static: true })
+  directive!: CeriousScrollDirective<number>;
+  readonly getItem = (index: number) => index;
+  options = {
+    layout: 'masonry' as const,
+    attachScrollbar: false,
+    autoResize: false,
+    masonry: { columns: 2, segmentSize: 8, getItemHeight: () => 60 },
+  };
+}
+
+@Component({
+  standalone: true,
+  imports: [CeriousScrollDirective],
+  template: `
+    <div ceriousScroll [ceriousScrollTotalElements]="100" [ceriousScrollGetItem]="getItem"
+      [ceriousScrollItemTemplate]="tpl" [ceriousScrollOptions]="options"
+      [ceriousScrollAutoRender]="false" style="width: 400px; height: 600px"></div>
+    <ng-template #tpl let-index><div class="masonry-test-card">Dynamic {{ index }}</div></ng-template>
+  `,
+})
+class TestDynamicMasonryComponent {
+  @ViewChild(CeriousScrollDirective, { static: true })
+  directive!: CeriousScrollDirective<number>;
+  readonly getItem = (index: number) => index;
+  options = {
+    layout: 'masonry' as const,
+    attachScrollbar: false,
+    autoResize: false,
+    masonry: { columns: 2, segmentSize: 8, estimatedItemHeight: 60 },
+  };
+}
+
 describe('CeriousScrollDirective', () => {
+  describe('Masonry layout', () => {
+    it('renders Angular templates and navigates in card space', async () => {
+      await TestBed.configureTestingModule({ imports: [TestMasonryComponent] }).compileComponents();
+      const fixture = TestBed.createComponent(TestMasonryComponent);
+      fixture.detectChanges();
+      const host = fixture.componentInstance;
+      host.directive.render();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelectorAll('.masonry-test-card').length).toBeGreaterThan(0);
+      expect(host.directive.scroller?.masonryDeterminism).toBe('canonical');
+      host.directive.jumpToItem(50);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Card 50');
+    });
+
+    it('keeps dynamic measurement probes out of ApplicationRef change detection', async () => {
+      await TestBed.configureTestingModule({ imports: [TestDynamicMasonryComponent] }).compileComponents();
+      const appRef = TestBed.inject(ApplicationRef);
+      const attachView = spyOn(appRef, 'attachView').and.callThrough();
+      const fixture = TestBed.createComponent(TestDynamicMasonryComponent);
+      fixture.detectChanges();
+      fixture.componentInstance.directive.render();
+
+      const visibleCards = fixture.nativeElement.querySelectorAll('.masonry-test-card').length;
+      expect(visibleCards).toBeGreaterThan(0);
+      expect(fixture.componentInstance.directive.scroller?.masonryDeterminism).toBe('local');
+      expect(attachView.calls.count()).toBe(visibleCards);
+    });
+  });
+
   describe('basic setup and lifecycle', () => {
     let fixture: ComponentFixture<TestHostComponent>;
     let host: TestHostComponent;

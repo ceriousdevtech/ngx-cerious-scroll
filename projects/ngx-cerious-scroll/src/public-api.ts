@@ -3,6 +3,7 @@
  */
 
 export * from './lib/cerious-scroll.types';
+export type { CeriousScrollOptions } from './lib/cerious-scroll.types';
 export * from './lib/cerious-scroll.observable';
 export * from './lib/cerious-scroll-item-template.directive';
 export * from './lib/cerious-scroll.directive';

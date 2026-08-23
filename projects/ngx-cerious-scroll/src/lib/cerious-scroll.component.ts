@@ -50,6 +50,18 @@ export class CeriousScrollComponent<TItem = unknown> implements AfterContentInit
 
   constructor(private readonly ceriousScroll: CeriousScrollDirective<TItem>) {}
 
+  get scroller() { return this.ceriousScroll.scroller; }
+  render() { return this.ceriousScroll.render(); }
+  jumpToElement(index: number) { return this.ceriousScroll.jumpToElement(index); }
+  jumpToItem(index: number, screenOffset = 0) {
+    return this.ceriousScroll.jumpToItem(index, screenOffset);
+  }
+  scrollToPercentage(percentage: number) {
+    return this.ceriousScroll.scrollToPercentage(percentage);
+  }
+  reset() { return this.ceriousScroll.reset(); }
+  recalculate() { return this.ceriousScroll.recalculate(); }
+
   ngAfterContentInit(): void {
     if (this.ceriousScroll.ceriousScrollItemTemplate) return;
     if (!this.projectedItemTemplate) return;
