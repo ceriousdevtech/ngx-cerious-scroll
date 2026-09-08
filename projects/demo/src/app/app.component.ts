@@ -1,5 +1,8 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
+
+import { initAnalytics, trackPageView } from './analytics';
 
 import { FpsMeterComponent } from './fps-meter.component';
 
@@ -27,4 +30,15 @@ import { FpsMeterComponent } from './fps-meter.component';
     </div>
   `,
 })
-export class AppComponent {}
+export class AppComponent {
+  private readonly router = inject(Router);
+
+  constructor() {
+    initAnalytics();
+    // Hash routing means GA4's automatic page_view only ever sees the landing
+    // page, so every route change is reported explicitly.
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => trackPageView(e.urlAfterRedirects));
+  }
+}
