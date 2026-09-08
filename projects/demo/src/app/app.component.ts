@@ -14,6 +14,7 @@ import { FpsMeterComponent } from './fps-meter.component';
         <div class="topbar__spacer"></div>
         <demo-fps-meter />
         <a class="topbar__link" routerLink="/">← All demos</a>
+        <a class="topbar__link topbar__link--accent" routerLink="/benchmark">Benchmark</a>
         <a
           class="topbar__link"
           href="https://www.npmjs.com/package/@ceriousdevtech/ngx-cerious-scroll"

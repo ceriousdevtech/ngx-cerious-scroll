@@ -1,0 +1,518 @@
+<div class="bench">
+  <section class="bench__hero">
+    <span class="tagline">Live benchmark</span>
+    <h1>Angular wrapper performance benchmark</h1>
+    <p>
+      Measured in <em>your</em> browser when you press Run. Nothing here is pre-recorded. Unlike the
+      vanilla benchmark, which drives the engine directly, this one measures the
+      <code>ceriousScroll</code> directive: every row is an Angular template instance rendered
+      through real change detection, so the numbers include Angular's own work. The control group is
+      the same rows rendered with a plain <code>&#64;for</code> and no virtualiser.
+    </p>
+    @if (env) {
+      <div class="envstrip">
+        <span><b>{{ env.browser }}</b></span>
+        <span><b>{{ env.platform }}</b></span>
+        <span>cores <b>{{ env.cores ?? '?' }}</b></span>
+        <span>refresh <b>{{ env.refreshHz }} Hz</b></span>
+        <span>budget <b>{{ env.frameBudgetMs.toFixed(1) }} ms</b></span>
+        <span>surface <b>{{ env.surface }}</b></span>
+      </div>
+    }
+  </section>
+
+  <div class="modebar">
+    <div class="modeswitch" role="tablist">
+      <button type="button" role="tab" [disabled]="running" [class.is-active]="mode === 'scale'" (click)="setMode('scale')">
+        <b>Scale sweep</b>
+        <span>Hold the row still, grow the dataset from 1K to 10M</span>
+      </button>
+      <button type="button" role="tab" [disabled]="running" [class.is-active]="mode === 'complexity'" (click)="setMode('complexity')">
+        <b>Complexity sweep</b>
+        <span>Hold the dataset still, grow the row from 4 to 61 nodes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------ step 1 -->
+  <section class="step">
+    <header class="step__head">
+      <span class="step__num">1</span>
+      <div>
+        <h2>Configure</h2>
+        @if (mode === 'scale') {
+          <p>
+            Pick one row template and the dataset sizes to walk through. If the wrapper is doing its
+            job, every number in the results stays flat as the row count climbs.
+          </p>
+        } @else {
+          <p>
+            Pick one dataset size and the row templates to walk through, from a four-node row up to a
+            sixty-node panel. This is what separates engine cost from Angular's render cost.
+          </p>
+        }
+      </div>
+    </header>
+
+    @if (mode === 'scale') {
+      <div class="step__body">
+        <div class="ctl-grid">
+          <div class="ctl">
+            <span>Row template</span>
+            <select [(ngModel)]="template" (ngModelChange)="previewTemplate($event)">
+              @for (g of TEMPLATE_GROUPS; track g.label) {
+                <optgroup [label]="g.label">
+                  @for (k of g.keys; track k) {
+                    <option [value]="k">{{ TEMPLATES[k].optionLabel }}</option>
+                  }
+                </optgroup>
+              }
+            </select>
+          </div>
+          <div class="ctl">
+            <span>Scroll sample per size</span>
+            <select [(ngModel)]="durationMs">
+              <option [ngValue]="2000">2 seconds (fast)</option>
+              <option [ngValue]="4000">4 seconds (default)</option>
+              <option [ngValue]="8000">8 seconds (thorough)</option>
+            </select>
+          </div>
+          <div class="ctl">
+            <span>Fling velocity</span>
+            <select [(ngModel)]="velocity">
+              <option [ngValue]="24">Reading pace, 24 px/frame</option>
+              <option [ngValue]="60">Fast scroll, 60 px/frame</option>
+              <option [ngValue]="160">Hard fling, 160 px/frame</option>
+            </select>
+          </div>
+          <div class="ctl">
+            <span>Mount repetitions</span>
+            <select [(ngModel)]="reps">
+              <option [ngValue]="3">3 (median)</option>
+              <option [ngValue]="5">5 (median)</option>
+              <option [ngValue]="9">9 (median)</option>
+            </select>
+          </div>
+        </div>
+        <p class="ctl-note">{{ TEMPLATES[template].note }}</p>
+
+        <label class="switch">
+          <input type="checkbox" [(ngModel)]="wantBaseline" />
+          <span>
+            <b>Also measure an unvirtualized baseline</b>
+            Renders every row with a plain <code>&#64;for</code>, the way you would without a
+            virtualiser, so the numbers above have a control group. Refused above two million DOM
+            nodes, and the refusal is reported rather than hidden.
+          </span>
+        </label>
+
+        <div class="ctl" style="margin-top: 18px">
+          <span>Dataset sizes</span>
+          <div class="chips">
+            @for (n of SIZES; track n) {
+              <label class="chip" [class.is-on]="sizes.includes(n)">
+                <input type="checkbox" [checked]="sizes.includes(n)" (change)="toggleSize(n)" />
+                {{ nf.format(n) }}
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="step__body">
+        <div class="ctl-grid">
+          <div class="ctl">
+            <span>Dataset size</span>
+            <select [(ngModel)]="cxSize">
+              <option [ngValue]="10000">10,000 rows</option>
+              <option [ngValue]="100000">100,000 rows</option>
+              <option [ngValue]="1000000">1,000,000 rows</option>
+              <option [ngValue]="10000000">10,000,000 rows</option>
+            </select>
+          </div>
+          <div class="ctl">
+            <span>Scroll sample per template</span>
+            <select [(ngModel)]="cxDuration">
+              <option [ngValue]="1500">1.5 seconds (fast)</option>
+              <option [ngValue]="3000">3 seconds (default)</option>
+              <option [ngValue]="6000">6 seconds (thorough)</option>
+            </select>
+          </div>
+        </div>
+        <div class="ctl" style="margin-top: 18px">
+          <span>Row templates <small>node counts are measured, not claimed</small></span>
+          <div class="chips">
+            @for (k of SWEEP_KEYS; track k) {
+              <label class="chip" [class.is-on]="cxTemplates.includes(k)" [title]="TEMPLATES[k].note">
+                <input type="checkbox" [checked]="cxTemplates.includes(k)" (change)="toggleCxTemplate(k)" />
+                {{ TEMPLATES[k].label }}
+                <span style="color: var(--muted); font-size: 0.76rem"> · {{ footprint(k) }} nodes</span>
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ------------------------------------------------------------ step 2 -->
+  <section class="step">
+    <header class="step__head">
+      <span class="step__num">2</span>
+      <div>
+        <h2>Run</h2>
+        <p>
+          The surface below is the <code>ceriousScroll</code> directive under test. It stays visible
+          and interactive the whole time, so you can watch each phase happen and grab it yourself
+          once the run finishes.
+        </p>
+      </div>
+    </header>
+    <div class="step__body">
+      <div class="run-bar">
+        <button class="btn btn--primary" type="button" [disabled]="running" (click)="run()">
+          ▶ Run {{ mode === 'scale' ? 'scale' : 'complexity' }} sweep
+        </button>
+        <button class="btn" type="button" [disabled]="!running" (click)="stop()">Stop</button>
+        <div class="progress"><div class="progress__fill" [style.width.%]="progress"></div></div>
+        <span class="run-status">{{ status }}</span>
+      </div>
+
+      <div class="stage">
+        <div class="stage__badge">
+          <span class="dot" [class.is-live]="stageLive"></span>
+          <span>{{ stageLabel }}</span>
+        </div>
+        <div
+          class="bx-host"
+          #host
+          ceriousScroll
+          [ceriousScrollTotalElements]="specTotal"
+          [ceriousScrollGetItem]="identity"
+          [ceriousScrollItemTemplate]="rowTpl"
+          [ceriousScrollOptions]="scrollOptions"
+        ></div>
+        <ng-template #rowTpl let-index="index">
+          <!--
+            countRender() increments the per-frame counter. In Angular this
+            counts template evaluations for rows the engine put in the viewport,
+            which is the framework's equivalent of a renderer invocation.
+          -->
+          <benchmark-row [index]="countRender(index)" [templateKey]="specTemplate" />
+        </ng-template>
+
+        @if (baselineTotal) {
+          <div class="bx-baseline-host" #baselineHost>
+            <div>
+              @for (i of baselineRowIndices; track i) {
+                <benchmark-row [index]="i" [templateKey]="baselineTemplate" />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ step 3 -->
+  <section class="step">
+    <header class="step__head">
+      <span class="step__num">3</span>
+      <div>
+        <h2>Results</h2>
+        <p>
+          @if (activeRows.length) {
+            {{ mode === 'scale' ? TEMPLATES[template].label : nf.format(cxSize) + ' rows' }} ·
+            {{ env?.refreshHz ?? '?' }} Hz display
+          } @else {
+            Nothing measured yet. Run the sweep above and the numbers land here.
+          }
+        </p>
+      </div>
+    </header>
+    <div class="step__body">
+      <div class="tiles">
+        @if (tiles) {
+          @for (t of tiles; track t.k) {
+            <div class="tile" [class.tile--hero]="t.hero">
+              <div class="tile__k">{{ t.k }}</div>
+              <div class="tile__v">{{ t.v }}@if (t.unit) {<small>{{ t.unit }}</small>}</div>
+              <div class="tile__sub">{{ t.sub }}</div>
+            </div>
+          }
+        } @else {
+          <div class="empty">Waiting for a run.</div>
+        }
+      </div>
+
+      <div class="subtabs" role="tablist">
+        @for (v of views; track v) {
+          <button type="button" role="tab" class="subtab" [class.is-active]="view === v" (click)="setView(v)">
+            {{ viewLabel(v) }}
+          </button>
+        }
+      </div>
+
+      @switch (view) {
+        @case ('table') {
+          <div>
+            <div class="result-block">
+              <h3 class="result-block__title">
+                {{ mode === 'scale' ? 'Every dataset size' : 'Every row template' }}
+              </h3>
+              <div class="table-scroll">
+                @if (mode === 'scale') {
+                  <table class="bench-table">
+                    <thead>
+                      <tr>
+                        <th>Rows</th>
+                        <th title="Time to construct the component and paint the first viewport">Mount</th>
+                        <th title="Median JS time per animation frame: engine math plus Angular's rendering">Frame p50</th>
+                        <th title="95th-percentile per-frame JS time">Frame p95</th>
+                        <th title="Frames per second observed during the sustained scroll">FPS</th>
+                        <th title="Longest single frame interval during the run">Worst frame</th>
+                        <th title="Share of frames that missed the display budget">Jank</th>
+                        <th title="95th-percentile time to jump to a random index and repaint">Jump p95</th>
+                        <th title="DOM elements resident inside the scroll surface at steady state">DOM nodes</th>
+                        <th title="Chromium-only JS heap reading after the run">Heap</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (r of scaleRows; track r.total; let i = $index) {
+                        <tr [class.is-sel]="i === selected" (click)="selectRow(i)">
+                          <td class="size">{{ nf.format(r.total) }}</td>
+                          <td [class]="cls(r.mountMs, 8, 25)">{{ ms(r.mountMs) }} ms</td>
+                          <td [class]="cls(r.frameWorkP50, budget * 0.5, budget)">{{ ms(r.frameWorkP50) }} ms</td>
+                          <td [class]="cls(r.frameWorkP95, budget * 0.75, budget * 1.5)">{{ ms(r.frameWorkP95) }} ms</td>
+                          <td>{{ isFinite(r.fps) ? round(r.fps) : '—' }}</td>
+                          <td [class]="cls(r.worstFrameMs, budget * 2, budget * 4)">{{ ms(r.worstFrameMs, 1) }} ms</td>
+                          <td [class]="cls(r.jankPct, 1, 5)">{{ ms(r.jankPct, 1) }}%</td>
+                          <td [class]="cls(r.jumpP95, 4, 16)">{{ ms(r.jumpP95) }} ms</td>
+                          <td>{{ nf.format(r.domNodes) }}<span class="muted"> / {{ nf.format(r.domRows) }} rows</span></td>
+                          <td class="muted">{{ isFinite(r.heapMB) ? ms(r.heapMB, 1) + ' MB' : 'n/a' }}</td>
+                        </tr>
+                      } @empty {
+                        <tr><td [attr.colspan]="10" class="empty">No scale sweep has been run yet.</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                } @else {
+                  <table class="bench-table">
+                    <thead>
+                      <tr>
+                        <th>Row template</th>
+                        <th title="DOM elements the template creates for a single row">Nodes / row</th>
+                        <th title="Median row height as measured from the DOM by the engine">Row height</th>
+                        <th title="Time to construct the component and paint the first viewport">Mount</th>
+                        <th title="Median JS time per animation frame: engine math plus Angular's rendering">Frame p50</th>
+                        <th title="95th-percentile per-frame JS time">Frame p95</th>
+                        <th>FPS</th>
+                        <th title="Share of frames that missed the display budget">Jank</th>
+                        <th title="Template evaluations per frame for rows entering the viewport">Renders / frame</th>
+                        <th title="Average JS time attributable to building one row">Per row</th>
+                        <th title="DOM elements resident in the scroll surface at steady state">Live nodes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (r of cxRows; track r.template; let i = $index) {
+                        <tr [class.is-sel]="i === cxSelected" (click)="selectRow(i)">
+                          <td class="size">{{ r.templateLabel }}</td>
+                          <td>{{ nf.format(r.nodesPerRow) }}</td>
+                          <td class="muted">{{ isFinite(r.rowHeightPx) ? round(r.rowHeightPx) + ' px' : '—' }}</td>
+                          <td [class]="cls(r.mountMs, 8, 25)">{{ ms(r.mountMs) }} ms</td>
+                          <td [class]="cls(r.frameWorkP50, budget * 0.5, budget)">{{ ms(r.frameWorkP50) }} ms</td>
+                          <td [class]="cls(r.frameWorkP95, budget * 0.75, budget * 1.5)">{{ ms(r.frameWorkP95) }} ms</td>
+                          <td>{{ isFinite(r.fps) ? round(r.fps) : '—' }}</td>
+                          <td [class]="cls(r.jankPct, 1, 5)">{{ ms(r.jankPct, 1) }}%</td>
+                          <td class="muted">{{ ms(r.rendersPerFrame) }}</td>
+                          <td>{{ ms(r.usPerRender, 0) }} µs</td>
+                          <td class="muted">{{ nf.format(r.domNodes) }} / {{ nf.format(r.domRows) }} rows</td>
+                        </tr>
+                      } @empty {
+                        <tr><td [attr.colspan]="11" class="empty">No complexity sweep has been run yet.</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+              </div>
+            </div>
+            <p class="table-note">Click any row to select it. The Frame timeline tab follows your selection.</p>
+          </div>
+        }
+
+        @case ('timeline') {
+          <div class="chart-box">
+            <h3>
+              @if (timelineRow) {
+                Frame timeline · {{ timelineRow.templateLabel }} · {{ nf.format(timelineRow.total) }} rows
+              } @else {
+                Frame timeline
+              }
+            </h3>
+            <p>
+              Every animation frame of the selected run, in order. Green is the wall-clock gap between
+              frames, blue is the JS Angular and the engine spent together, and the dashed line is the
+              display budget. On a healthy run the green trace sits <em>on</em> the budget: the browser
+              paces frames to the refresh rate, so matching it is the best result available. What
+              matters is the shaded band above, where missed frames appear.
+            </p>
+            <canvas #timelineCanvas></canvas>
+            <div class="legend">
+              <span><i style="background: #78f3d2"></i>Frame interval</span>
+              <span><i style="background: #8cb7ff"></i>JS work per frame</span>
+              <span><i style="background: #f2c66d"></i>Display budget (shaded above = missed)</span>
+            </div>
+          </div>
+        }
+
+        @case ('chart') {
+          <div class="chart-box">
+            <h3>{{ mode === 'scale' ? 'Cost against dataset size' : 'Cost against row complexity' }}</h3>
+            <p>
+              @if (mode === 'scale') {
+                The dataset grows by orders of magnitude on a log scale. Flat lines mean cost is
+                independent of row count.
+              } @else {
+                Per-frame JS cost plotted against the number of DOM nodes each row template creates.
+              }
+            </p>
+            @if (mode === 'scale') {
+              <canvas #scalingCanvas></canvas>
+            } @else {
+              <canvas #complexityCanvas></canvas>
+            }
+            <div class="legend">
+              <span><i style="background: #78f3d2"></i>Frame p50 (ms)</span>
+              @if (mode === 'scale') {
+                <span><i style="background: #8cb7ff"></i>Mount (ms)</span>
+                <span><i style="background: #c9a2ff"></i>Jump p95 (ms)</span>
+              } @else {
+                <span><i style="background: #c9a2ff"></i>Per-row build cost (µs)</span>
+              }
+            </div>
+          </div>
+        }
+
+        @case ('baseline') {
+          <div>
+            <p class="view-lead">
+              The same harness, run against the same rows rendered with a plain <code>&#64;for</code>
+              and no virtualiser. Frame <em>work</em> is not compared here: the unvirtualized list does
+              almost no JavaScript per frame because Angular already created every view and the browser
+              pays at layout and paint instead. So the honest comparison is the wall-clock
+              <em>frame interval</em>, plus what it costs to render and how much DOM stays resident.
+            </p>
+            <div class="table-scroll">
+              <table class="bench-table bench-table--cmp">
+                <thead>
+                  <tr>
+                    <th>Rows</th>
+                    <th>Mount<small>wrapper → unvirtualized</small></th>
+                    <th>Frame interval<small>wrapper → unvirtualized</small></th>
+                    <th>DOM nodes<small>wrapper → unvirtualized</small></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of baselineRows; track b.total) {
+                    @if (b.status !== 'ok') {
+                      <tr>
+                        <td class="size">{{ nf.format(b.total) }}</td>
+                        <td class="cmp">
+                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.mountMs) + ' ms' : '—' }}</span>
+                          <span class="cmp__sep">→</span>
+                          <span class="verdict verdict--refused">cannot be built</span>
+                        </td>
+                        <td class="verdict-note" [attr.colspan]="2">{{ b.note }}</td>
+                      </tr>
+                    } @else {
+                      <tr>
+                        <td class="size">{{ nf.format(b.total) }}</td>
+                        <td class="cmp">
+                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.mountMs) + ' ms' : '—' }}</span>
+                          <span class="cmp__sep">→</span>
+                          <span class="cmp__n">{{ ms(b.mountMs, 1) }} ms</span>
+                          <span class="cmp__r" [class.cmp__r--big]="ratioBig(virtFor(b.total)?.mountMs, b.mountMs)">
+                            {{ ratioLabel(virtFor(b.total)?.mountMs, b.mountMs) }}
+                          </span>
+                        </td>
+                        <td class="cmp">
+                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.frameIntervalP50, 1) + ' ms' : '—' }}</span>
+                          <span class="cmp__sep">→</span>
+                          <span class="cmp__n">{{ ms(b.frameIntervalP50, 1) }} ms</span>
+                          <span class="cmp__r" [class.cmp__r--bad]="(b.jankPct ?? 0) >= 5">{{ ms(b.jankPct, 0) }}% jank</span>
+                        </td>
+                        <td class="cmp">
+                          <span class="cmp__v">{{ virtFor(b.total) ? nf.format(virtFor(b.total)!.domNodes) : '—' }}</span>
+                          <span class="cmp__sep">→</span>
+                          <span class="cmp__n">{{ nf.format(b.domNodes ?? 0) }}</span>
+                          <span class="cmp__r cmp__r--big">{{ ratioLabel(virtFor(b.total)?.domNodes, b.domNodes) }}</span>
+                        </td>
+                      </tr>
+                    }
+                  } @empty {
+                    <tr>
+                      <td [attr.colspan]="4" class="empty">
+                        No baseline measured yet. Enable it in step 1 and run the scale sweep.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="chart-box">
+              <h3>Resident DOM nodes, both approaches</h3>
+              <p>Log scale on both axes. One line stays flat; the other tracks the dataset until it cannot be built at all.</p>
+              <canvas #baselineCanvas></canvas>
+              <div class="legend">
+                <span><i style="background: #78f3d2"></i>with the wrapper</span>
+                <span><i style="background: #ff8d8d"></i>unvirtualized</span>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ step 4 -->
+  <section class="step">
+    <header class="step__head">
+      <span class="step__num">4</span>
+      <div>
+        <h2>Export</h2>
+        <p>
+          Every export carries the full environment block alongside the numbers from both sweeps. A
+          result should never be quoted without the machine that produced it.
+        </p>
+      </div>
+    </header>
+    <div class="step__body">
+      <div class="export-bar">
+        <button class="btn btn--sm" type="button" [disabled]="!hasResults" (click)="exportMarkdown()">Copy Markdown</button>
+        <button class="btn btn--sm" type="button" [disabled]="!hasResults" (click)="exportJsonCopy()">Copy JSON</button>
+        <button class="btn btn--sm" type="button" [disabled]="!hasResults" (click)="exportJson()">Download JSON</button>
+        <button class="btn btn--sm" type="button" [disabled]="!hasResults" (click)="exportCsv()">Download CSV</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ method -->
+  <section class="panel panel--method">
+    <h2 class="panel__title">
+      How it works <small>what is measured, and what it is not</small>
+    </h2>
+    <div class="method">
+      <!-- Static, author-written copy shared verbatim with the vanilla page and
+           the other wrappers, so the four cannot drift apart. -->
+      <div [innerHTML]="methodHtml"></div>
+      <details class="env-details">
+        <summary>Full environment readout</summary>
+        <div class="kv">
+          @for (row of envRows; track row[0]) {
+            <div><span class="k">{{ row[0] }}</span><span class="v">{{ row[1] }}</span></div>
+          }
+        </div>
+      </details>
+    </div>
+  </section>
+</div>

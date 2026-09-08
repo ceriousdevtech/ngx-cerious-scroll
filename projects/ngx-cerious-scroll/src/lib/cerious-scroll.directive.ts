@@ -408,7 +408,16 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     this.ceriousScrollReady.emit(this.hostRef.scroller);
 
     if (this.ceriousScrollAutoRender) {
-      queueMicrotask(() => this.render());
+      queueMicrotask(() => {
+        this.render();
+        // A first pass can land before the container has its final laid-out
+        // height: an async stylesheet, a web font, or a parent flex box still
+        // settling. The engine then fills whatever height it measured, which
+        // over-renders, and the surplus rows stay resident until the next
+        // scroll or resize. Re-measure on the next frame so a pre-layout
+        // reading corrects itself.
+        this.ngZone.runOutsideAngular(() => requestAnimationFrame(() => this.render()));
+      });
     }
   }
 
