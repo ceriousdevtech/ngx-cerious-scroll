@@ -35,6 +35,14 @@ function coerceTotalElements(explicitTotal: number | null | undefined, itemsLen:
   return Math.max(1, candidate);
 }
 
+/**
+ * Attribute the engine puts on the `sticky` pinned header.
+ *
+ * The engine renders that header through the same item template, but mounts it
+ * outside the recycler. This is how the prune pass tells the two apart.
+ */
+const STICKY_ATTR = 'data-cerious-sticky';
+
 @Directive({
   selector: '[ceriousScroll]',
   standalone: true,
@@ -251,7 +259,17 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
       }
     }
     for (const [container, view] of this.viewByContainer) {
-      if (!active.has(container)) {
+      // The `sticky` pinned header is rendered through this same item template,
+      // but the engine mounts it OUTSIDE the recycler, so it is never one of
+      // the rendered elements and never lands in `active`. Pruning it on that
+      // basis tears down its view the moment it is created, which is why an
+      // unguarded prune leaves the pinned header as an empty box.
+      //
+      // The engine removes the element outright when `resolve` returns null, so
+      // "still in the document" is the correct liveness test for it.
+      const isSticky = container.hasAttribute(STICKY_ATTR);
+      const keep = isSticky ? container.isConnected : active.has(container);
+      if (!keep) {
         // Detach DOM but keep the view alive in the pool for future reuse.
         // Destroying + recreating views per scroll step dominates frame time.
         for (const node of view.rootNodes) {
@@ -498,7 +516,16 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     }
 
     // Try to reuse a pooled view from a container that scrolled out of viewport.
-    const pooled = this.freeViews.pop();
+    //
+    // NOT for the `sticky` pinned header. Reuse re-parents a view by moving its
+    // `rootNodes`, and when the item template's root is a control-flow block
+    // (`@if` / `@switch`) those root nodes are just the block's anchor comments
+    // — the rendered content is inserted around them by the block's own view
+    // container and does not travel. A recycled row survives that because the
+    // engine hands it back the same container it was built in; the pinned
+    // header is a different element every time it is populated, so it would
+    // arrive empty. It is one element, so building it fresh costs nothing.
+    const pooled = elementContainer.hasAttribute(STICKY_ATTR) ? undefined : this.freeViews.pop();
     if (pooled) {
       const item = this.getItemForIndex(index);
       pooled.context.$implicit = item;
@@ -523,13 +550,24 @@ export class CeriousScrollDirective<TItem = unknown> implements AfterViewInit, O
     const view = this.ngZone.run(() => {
       const v = template.createEmbeddedView({ $implicit: item, item, index });
       this.appRef.attachView(v);
+
+      // Append BEFORE the first change detection.
+      //
+      // When the item template's root is a control-flow block (`@if`,
+      // `@switch`, `@for`), the view's `rootNodes` are the block's anchor
+      // comments; the rendered content is inserted around those anchors by the
+      // block's own container when change detection runs. Detect first and that
+      // content materialises while the anchors are still detached, so appending
+      // `rootNodes` afterwards moves the anchors and leaves the content behind
+      // — a row that measures as empty. Anchors first, then detect, and the
+      // content lands inside the container.
+      for (const node of v.rootNodes) {
+        elementContainer.appendChild(node);
+      }
+
       v.detectChanges();
       return v;
     });
-
-    for (const node of view.rootNodes) {
-      elementContainer.appendChild(node);
-    }
 
     this.viewByContainer.set(elementContainer, view);
   }

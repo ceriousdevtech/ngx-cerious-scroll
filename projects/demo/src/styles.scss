@@ -1,4 +1,4 @@
-/* Angular demo styles — mirrors vue-cerious-scroll for visual parity.
+/* Angular demo styles, mirrors vue-cerious-scroll for visual parity.
    The comparison demo keeps its own scoped CSS at app/demos/comparison.css. */
 
 /* ============ App shell (gallery + topbar + demo frame) ============ */
@@ -178,8 +178,10 @@ body {
   border-color: rgba(120, 243, 210, .55);
 }
 
-.demo-card__emoji {
+.demo-card__icon {
+  /* The icon sizes itself in `em`, so this is what sets it. */
   font-size: 1.6rem;
+  line-height: 0;
 }
 
 .demo-card__title {
@@ -419,7 +421,7 @@ body {
     min-height: 40px;
   }
 
-  /* Code viewer — allow horizontal scroll for long lines */
+  /* Code viewer, allow horizontal scroll for long lines */
   .code-scroll {
     overflow-x: auto;
   }
@@ -436,7 +438,7 @@ body {
     padding-left: 10px;
   }
 
-  /* Data grid — keeps its own horizontal scroll via the wrapper */
+  /* Data grid, keeps its own horizontal scroll via the wrapper */
   .grid-head__cell,
   .grid-cell {
     font-size: 0.8rem;
@@ -446,7 +448,7 @@ body {
     padding: 8px 8px;
   }
 
-  /* Finance — collapse to compact 3-column row */
+  /* Finance, collapse to compact 3-column row */
   .fin-row {
     grid-template-columns: 72px 1fr 90px;
     gap: 8px;
@@ -482,7 +484,7 @@ body {
     gap: 6px;
   }
 
-  /* Log viewer — drop the service column */
+  /* Log viewer, drop the service column */
   .log-row {
     padding: 0 10px;
     gap: 8px;
@@ -529,7 +531,7 @@ body {
     min-height: 40px;
   }
 
-  /* SQL results — keeps horizontal scroll via fixed grid template */
+  /* SQL results, keeps horizontal scroll via fixed grid template */
   .sql-editor {
     font-size: 0.78rem;
     padding: 10px 12px;
@@ -1492,7 +1494,7 @@ body {
 .cs-table-page .cs-table thead th {
   text-align: left;
   padding: 10px 14px;
-  background: #11141d; /* SOLID — body rows translating up must not show through */
+  background: #11141d; /* SOLID, body rows translating up must not show through */
   border-bottom: 2px solid var(--accent);
   font-weight: 650;
   font-size: 0.78rem;
@@ -1569,7 +1571,7 @@ body {
 .cs-heights-page .cs-table thead { background: #11141d; position: relative; z-index: 10; }
 
 /* vertical-align:top so the short ID/KIND/META cells sit at the TOP of a tall
-   row — makes the wild height differences obvious. */
+   row, makes the wild height differences obvious. */
 .cs-heights-page .cs-table tbody td {
   padding: 10px 14px;
   border-bottom: 1px solid var(--line);
@@ -1805,7 +1807,7 @@ body {
 .cs-pt-page .cs-num { text-align: right; font-variant-numeric: tabular-nums; }
 .cs-pt-page .cs-center { text-align: center; }
 
-/* Selection column (leading checkbox) — header + body. */
+/* Selection column (leading checkbox), header + body. */
 .cs-pt-page .cs-pt-check-col,
 .cs-pt-page td.cs-pt-check {
   text-align: center;
@@ -3135,3 +3137,172 @@ body {
 .dd__opt.is-active { background: rgba(255,255,255,.08); }
 .dd__opt.is-selected { color: var(--accent); font-weight: 600; }
 .dd__opt.is-selected.is-active { background: rgba(120,243,210,.13); }
+
+
+/* ============ Demo icons ============
+   Line icons from demo-icon.component.ts, replacing the emoji the gallery and the demo
+   headings used to carry. Sized in `em` so each one tracks the text it sits
+   beside, and stroked in `currentColor` so it takes that text's colour. */
+
+.demo-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  /* Optical: a 24-grid line icon sits slightly high against a cap-height
+     baseline, the same way an inline image does. */
+  vertical-align: -0.125em;
+}
+
+h1 .demo-icon {
+  width: 1.15em;
+  height: 1.15em;
+  color: var(--accent);
+}
+
+/* The standard demo chrome lays the heading out as a row, so the icon is a
+   flex item and `gap` spaces it. */
+.demo-page__header h1 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.demo-page__header h1 .demo-icon { vertical-align: baseline; }
+
+.demo-card__icon .demo-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
+}
+
+/* ============ "How to build this" panel ============
+   Collapsed by default and capped when open, because `.demo-scroll` is
+   `flex: 1` inside a fixed-height column: anything that grows that column comes
+   straight out of the engine's viewport. */
+
+.demo-docs {
+  flex-shrink: 0;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.demo-docs__summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 20px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.78rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.demo-docs__summary::-webkit-details-marker { display: none; }
+.demo-docs__summary:hover { color: var(--text); }
+
+.demo-docs__summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Drawn rather than a glyph, so it cannot fall back to a box. */
+.demo-docs__chev {
+  width: 7px;
+  height: 7px;
+  border-right: 1.6px solid currentColor;
+  border-bottom: 1.6px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform .18s ease;
+  flex-shrink: 0;
+}
+
+.demo-docs[open] .demo-docs__chev { transform: rotate(45deg); }
+
+.demo-docs__label {
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  color: var(--accent);
+}
+
+.demo-docs__feature {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-docs__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 20px;
+  padding: 2px 20px 16px;
+  max-height: 42vh;
+  overflow: auto;
+}
+
+.demo-docs__prose p { margin: 0 0 10px; font-size: 0.83rem; line-height: 1.55; color: #c9d1d9; }
+.demo-docs__prose h4 {
+  margin: 14px 0 6px;
+  font-size: 0.68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.demo-docs__prose ul { margin: 0; padding-left: 17px; }
+.demo-docs__prose li { font-size: 0.8rem; line-height: 1.5; color: #c9d1d9; margin-bottom: 5px; }
+.demo-docs__prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  background: rgba(255,255,255,.07);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.demo-docs__more a { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
+.demo-docs__more a:hover { text-decoration: underline; }
+
+.demo-docs__codewrap { position: relative; min-width: 0; }
+
+.demo-docs__copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--control-bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.demo-docs__copy:hover { color: var(--text); border-color: var(--accent); }
+
+.demo-docs__code {
+  margin: 0;
+  padding: 12px 14px;
+  background: #0a0e15;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  line-height: 1.6;
+  color: #d7dde6;
+  tab-size: 2;
+}
+
+/* Tokens are <i> so the markup stays light; the italic is cancelled here. */
+.demo-docs__code i { font-style: normal; }
+.demo-docs__code .tok-c { color: #6b7a8d; }
+.demo-docs__code .tok-s { color: #9ae6b4; }
+.demo-docs__code .tok-k { color: #8cb7ff; }
+.demo-docs__code .tok-n { color: #f0c674; }
+
+@media (max-width: 900px) {
+  .demo-docs__body { grid-template-columns: minmax(0, 1fr); max-height: 50vh; }
+}

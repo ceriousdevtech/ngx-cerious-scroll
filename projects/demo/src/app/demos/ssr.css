@@ -1,0 +1,72 @@
+.ssr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 54px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ssr-rank {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.74rem;
+  min-width: 46px;
+}
+
+.ssr-name { font-weight: 600; font-size: 0.88rem; }
+.ssr-sub { color: var(--muted); font-size: 0.76rem; }
+.ssr-score { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* Server-rendered rows are tinted so adoption is visible: if the engine threw
+ * them away and built its own, the tint would vanish. */
+.ssr-row[data-from-server] { box-shadow: inset 3px 0 0 var(--accent-2); }
+
+/* With hydration off the binding clears the container outright, so the server
+ * rows are discarded rather than left orphaned: the tint simply disappears,
+ * which is the whole tell. */
+
+.ssr-badge {
+  color: #ff8b8b;
+  border-color: rgba(255, 139, 139, .5);
+}
+
+.ssr-page--stranded .ssr-row[data-from-server] .ssr-badge::after { content: ' · orphaned'; }
+
+.ssr-badge {
+  font-size: 0.62rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  border: 1px solid rgba(140, 183, 255, .4);
+  border-radius: 999px;
+  padding: 1px 6px;
+  margin-inline-start: 10px;
+}
+
+/* The server payload, shown as the markup it actually is. */
+.ssr-panel {
+  padding: 10px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.ssr-panel h3 {
+  margin: 0 0 3px;
+  font-size: 0.68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.ssr-markup {
+  margin: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  height: 54px;
+  overflow: auto;
+  white-space: pre;
+}

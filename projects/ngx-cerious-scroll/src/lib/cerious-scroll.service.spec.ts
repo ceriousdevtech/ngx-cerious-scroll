@@ -93,17 +93,14 @@ describe('CeriousScrollService', () => {
       hostRef2.destroy();
     });
 
-    it('should invoke onScrollHook when provided', (done) => {
-      let hookCalled = false;
+    it('should invoke onScrollHook when the engine emits onScroll', () => {
+      let hookCalls = 0;
       const onScrollHook = () => {
-        hookCalled = true;
-        expect(hookCalled).toBe(true);
-        hostRef.destroy();
-        done();
+        hookCalls++;
       };
 
       const options = {
-        wheel: { enabled: true, emitViewportChangeEvent: true },
+        wheel: { enabled: false },
         touch: { enabled: false },
         keyboard: { enabled: false },
         attachScrollbar: false,
@@ -113,18 +110,44 @@ describe('CeriousScrollService', () => {
 
       const hostRef = service.createHost(container, 100, options, ngZone, onScrollHook);
 
-      // Simulate a wheel event outside Angular zone
-      ngZone.runOutsideAngular(() => {
-        const wheelEvent = new WheelEvent('wheel', { deltaY: 100 });
-        container.dispatchEvent(wheelEvent);
+      // Drive the engine through a real public API that emits onScroll
+      // synchronously. A synthetic WheelEvent is not usable here: the engine
+      // hands wheel input to the browser's native scrolling surface, whose
+      // scroll event an untrusted, programmatically dispatched WheelEvent does
+      // not produce in a headless browser.
+      hostRef.scroller.handleViewportChange(container);
+
+      expect(hookCalls).toBeGreaterThan(0);
+
+      hostRef.destroy();
+    });
+
+    it('should still invoke a caller-supplied onScroll alongside the hook', () => {
+      let hookCalls = 0;
+      let userOnScrollCalls = 0;
+
+      const options = {
+        wheel: { enabled: false },
+        touch: { enabled: false },
+        keyboard: { enabled: false },
+        attachScrollbar: false,
+        autoResize: false,
+        observeContentChanges: false,
+        onScroll: () => {
+          userOnScrollCalls++;
+        },
+      };
+
+      const hostRef = service.createHost(container, 100, options, ngZone, () => {
+        hookCalls++;
       });
 
-      setTimeout(() => {
-        if (!hookCalled) {
-          hostRef.destroy();
-          fail('onScrollHook was not invoked');
-        }
-      }, 100);
+      hostRef.scroller.handleViewportChange(container);
+
+      expect(userOnScrollCalls).toBeGreaterThan(0);
+      expect(hookCalls).toBe(userOnScrollCalls);
+
+      hostRef.destroy();
     });
 
     it('should set totalElements on the scroller', () => {

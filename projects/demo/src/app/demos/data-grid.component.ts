@@ -12,16 +12,27 @@ import {
   type SortDir,
 } from './data-grid.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 @Component({
   selector: 'demo-data-grid',
   standalone: true,
-  imports: [NgIf, CeriousScrollDirective],
+  imports: [NgIf, CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page grid-page">
       <div class="demo-page__header">
-        <h1>📊 Enterprise Data Grid</h1>
+        <h1><demo-icon name="grid" />Enterprise Data Grid</h1>
         <p>Sort, search, and multi-select across {{ order.length.toLocaleString() }} of 100,000 records.</p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="demo-toolbar">
         <input
@@ -90,6 +101,31 @@ import {
   `,
 })
 export class DataGridComponent {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "A column grid built from ordinary rows";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "This one is a normal vertical scroller and the columns are plain CSS. That is the right shape whenever the columns themselves do not need virtualizing: you keep a plain row renderer and the full width of your own markup. Sorting and filtering are handled the way they always are with virtualization: you re-order or re-filter the underlying array, tell the engine the new length, and ask it to repaint. The engine holds no copy of your data, so there is nothing to keep in sync.";
+  readonly DOCS_NOTES = [
+    "Sorting changes what an index MEANS, so <code>refresh()</code> is required. The length alone may not have changed.",
+    "Keep selection keyed on a stable id, not on a row index; indices move under you when the view is re-sorted.",
+    "Bind events on the container and delegate, rather than attaching listeners to recycled rows.",
+    "Give the columns fixed widths so the header and body stay aligned as rows recycle; measuring them from the mounted rows alone would shift them as you scroll.",
+  ];
+  readonly DOCS_CODE = `<!-- A grid is ordinary rows; the columns are your CSS. -->
+<div
+  class="grid"
+  ceriousScroll
+  [ceriousScrollItems]="visible"
+  [ceriousScrollItemTemplate]="rowTpl"
+></div>
+
+<ng-template #rowTpl let-row>
+  <div class="grid-row" (click)="select(row.id, $event)">
+    <span class="cell">{{ row.id }}</span>
+    <span class="cell">{{ row.name }}</span>
+  </div>
+</ng-template>`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
   @ViewChild('hScroll', { static: false }) hScroll?: ElementRef<HTMLDivElement>;
 

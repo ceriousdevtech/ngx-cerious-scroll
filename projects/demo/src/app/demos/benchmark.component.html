@@ -1,7 +1,7 @@
 <div class="bench">
   <section class="bench__hero">
     <span class="tagline">Live benchmark</span>
-    <h1>Angular wrapper performance benchmark</h1>
+    <h1><demo-icon name="benchmark" />Angular wrapper performance benchmark</h1>
     <p>
       Measured in <em>your</em> browser when you press Run. Nothing here is pre-recorded. Unlike the
       vanilla benchmark, which drives the engine directly, this one measures the
@@ -284,7 +284,7 @@
                           <td [class]="cls(r.mountMs, 8, 25)">{{ ms(r.mountMs) }} ms</td>
                           <td [class]="cls(r.frameWorkP50, budget * 0.5, budget)">{{ ms(r.frameWorkP50) }} ms</td>
                           <td [class]="cls(r.frameWorkP95, budget * 0.75, budget * 1.5)">{{ ms(r.frameWorkP95) }} ms</td>
-                          <td>{{ isFinite(r.fps) ? round(r.fps) : '—' }}</td>
+                          <td>{{ isFinite(r.fps) ? round(r.fps) : ', ' }}</td>
                           <td [class]="cls(r.worstFrameMs, budget * 2, budget * 4)">{{ ms(r.worstFrameMs, 1) }} ms</td>
                           <td [class]="cls(r.jankPct, 1, 5)">{{ ms(r.jankPct, 1) }}%</td>
                           <td [class]="cls(r.jumpP95, 4, 16)">{{ ms(r.jumpP95) }} ms</td>
@@ -318,11 +318,11 @@
                         <tr [class.is-sel]="i === cxSelected" (click)="selectRow(i)">
                           <td class="size">{{ r.templateLabel }}</td>
                           <td>{{ nf.format(r.nodesPerRow) }}</td>
-                          <td class="muted">{{ isFinite(r.rowHeightPx) ? round(r.rowHeightPx) + ' px' : '—' }}</td>
+                          <td class="muted">{{ isFinite(r.rowHeightPx) ? round(r.rowHeightPx) + ' px' : ', ' }}</td>
                           <td [class]="cls(r.mountMs, 8, 25)">{{ ms(r.mountMs) }} ms</td>
                           <td [class]="cls(r.frameWorkP50, budget * 0.5, budget)">{{ ms(r.frameWorkP50) }} ms</td>
                           <td [class]="cls(r.frameWorkP95, budget * 0.75, budget * 1.5)">{{ ms(r.frameWorkP95) }} ms</td>
-                          <td>{{ isFinite(r.fps) ? round(r.fps) : '—' }}</td>
+                          <td>{{ isFinite(r.fps) ? round(r.fps) : ', ' }}</td>
                           <td [class]="cls(r.jankPct, 1, 5)">{{ ms(r.jankPct, 1) }}%</td>
                           <td class="muted">{{ ms(r.rendersPerFrame) }}</td>
                           <td>{{ ms(r.usPerRender, 0) }} µs</td>
@@ -418,7 +418,7 @@
                       <tr>
                         <td class="size">{{ nf.format(b.total) }}</td>
                         <td class="cmp">
-                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.mountMs) + ' ms' : '—' }}</span>
+                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.mountMs) + ' ms' : ', ' }}</span>
                           <span class="cmp__sep">→</span>
                           <span class="verdict verdict--refused">cannot be built</span>
                         </td>
@@ -428,7 +428,7 @@
                       <tr>
                         <td class="size">{{ nf.format(b.total) }}</td>
                         <td class="cmp">
-                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.mountMs) + ' ms' : '—' }}</span>
+                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.mountMs) + ' ms' : ', ' }}</span>
                           <span class="cmp__sep">→</span>
                           <span class="cmp__n">{{ ms(b.mountMs, 1) }} ms</span>
                           <span class="cmp__r" [class.cmp__r--big]="ratioBig(virtFor(b.total)?.mountMs, b.mountMs)">
@@ -436,13 +436,13 @@
                           </span>
                         </td>
                         <td class="cmp">
-                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.frameIntervalP50, 1) + ' ms' : '—' }}</span>
+                          <span class="cmp__v">{{ virtFor(b.total) ? ms(virtFor(b.total)!.frameIntervalP50, 1) + ' ms' : ', ' }}</span>
                           <span class="cmp__sep">→</span>
                           <span class="cmp__n">{{ ms(b.frameIntervalP50, 1) }} ms</span>
                           <span class="cmp__r" [class.cmp__r--bad]="(b.jankPct ?? 0) >= 5">{{ ms(b.jankPct, 0) }}% jank</span>
                         </td>
                         <td class="cmp">
-                          <span class="cmp__v">{{ virtFor(b.total) ? nf.format(virtFor(b.total)!.domNodes) : '—' }}</span>
+                          <span class="cmp__v">{{ virtFor(b.total) ? nf.format(virtFor(b.total)!.domNodes) : ', ' }}</span>
                           <span class="cmp__sep">→</span>
                           <span class="cmp__n">{{ nf.format(b.domNodes ?? 0) }}</span>
                           <span class="cmp__r cmp__r--big">{{ ratioLabel(virtFor(b.total)?.domNodes, b.domNodes) }}</span>

@@ -1,7 +1,7 @@
 /**
  * Tiny deterministic PRNG helpers so demo data is stable across renders/reloads
  * (the engine re-derives rows by index, so generators must be pure functions of
- * the index — never `Math.random()` at render time).
+ * the index, never `Math.random()` at render time).
  */
 
 /** Mulberry32 PRNG seeded from a 32-bit integer. Returns a [0,1) generator. */

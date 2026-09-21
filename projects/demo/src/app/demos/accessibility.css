@@ -1,0 +1,68 @@
+.a11y-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 52px;
+  border-bottom: 1px solid var(--line);
+}
+
+.a11y-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.a11y-idx {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.75rem;
+  min-width: 74px;
+}
+
+.a11y-title { font-weight: 600; font-size: 0.88rem; }
+
+.a11y-tag {
+  margin-left: auto;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+  color: var(--muted);
+}
+
+/* Info strip. Sits between the toolbar and the scroll surface so the reading
+ * order is controls -> what they did -> the list, rather than burying the
+ * point below the fold. */
+.sr-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  padding: 10px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.sr-cell { min-width: 0; }
+
+.sr-cell h3 {
+  margin: 0 0 3px;
+  font-size: 0.68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* What a reader would say, built from the attributes the engine actually
+ * wrote, not from a separate simulation. */
+.sr-say {
+  font-size: 0.82rem;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.sr-good { color: var(--accent); }
+.sr-bad { color: #ff8b8b; }
+
+.sr-attrs {
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-family: ui-monospace, Menlo, monospace;
+}

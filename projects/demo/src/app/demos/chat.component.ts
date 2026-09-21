@@ -5,16 +5,27 @@ import { CeriousScrollDirective } from 'ngx-cerious-scroll';
 
 import { CHAT_BASE, ME, generateMessage, nowTime, type ChatMessage } from './chat.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 @Component({
   selector: 'demo-chat',
   standalone: true,
-  imports: [FormsModule, CeriousScrollDirective],
+  imports: [FormsModule, CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page">
       <div class="demo-page__header">
-        <h1>💬 Team Chat</h1>
-        <p>{{ total.toLocaleString() }} variable-height messages — send one and it auto-scrolls to the bottom.</p>
+        <h1><demo-icon name="chat" />Team Chat</h1>
+        <p>{{ total.toLocaleString() }} variable-height messages, send one and it auto-scrolls to the bottom.</p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div
         class="demo-scroll chat-scroll"
@@ -57,6 +68,22 @@ import { CHAT_BASE, ME, generateMessage, nowTime, type ChatMessage } from './cha
   `,
 })
 export class ChatComponent implements AfterViewInit {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "Variable-height bubbles with stick-to-bottom";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "A chat log is a virtual scroller with two extra habits: message heights are unknown until rendered, and the view should stay pinned to the newest message, but only when the reader was already at the bottom. Scrolling up to read history and then being yanked back down by an incoming message is the bug every chat UI has shipped at least once. The check is simply whether the camera is on the last element before you grow the dataset.";
+  readonly DOCS_NOTES = [
+    "Capture “was at bottom” before you change the length, not after: afterwards the answer is always no.",
+    "Bubbles are measured, so mixed text, images and attachments need no declared heights.",
+    "Reserve space for attachments before they load, or a late image will push the newest message off screen.",
+    "Backfilling older messages at the top is the prepend-and-anchor case; see that demo.",
+  ];
+  readonly DOCS_CODE = `send(text: string): void {
+  this.messages = [...this.messages, { id: nextId(), text, mine: true }];
+  // Stick to the bottom after the new bubble is measured.
+  requestAnimationFrame(() => this.scroller?.scrollToPercentage(100));
+}`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<ChatMessage>;
 
   sent: ChatMessage[] = [];

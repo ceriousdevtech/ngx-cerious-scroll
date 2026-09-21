@@ -5,7 +5,7 @@
  *
  * First, this app is a single page using HASH routing. GA4's automatic
  * page_view fires once, on the initial document load, and its enhanced
- * measurement watches History API calls — not hash changes. Left alone it would
+ * measurement watches History API calls, not hash changes. Left alone it would
  * report the landing page and nothing else, so navigating to a demo or to the
  * benchmark would be invisible. The automatic page_view is therefore turned off
  * and one is sent explicitly on every route change instead.

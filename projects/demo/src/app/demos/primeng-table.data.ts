@@ -3,7 +3,7 @@
  *
  * The whole dataset is materialised as plain row objects so PrimeNG's own
  * `FilterService` (real PrimeNG filter logic, every match mode) and the sort
- * comparator can run over the ENTIRE dataset — exactly as a normal PrimeNG
+ * comparator can run over the ENTIRE dataset, exactly as a normal PrimeNG
  * table would. Cerious-Scroll then virtualises rendering of the processed
  * result, so only ~25 rows are ever in the DOM.
  */

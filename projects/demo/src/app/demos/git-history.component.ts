@@ -5,16 +5,27 @@ import { CeriousScrollDirective } from 'ngx-cerious-scroll';
 
 import { GIT_TOTAL, makeCommit, type GitFile } from './git.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 @Component({
   selector: 'demo-git-history',
   standalone: true,
-  imports: [NgIf, CeriousScrollDirective],
+  imports: [NgIf, CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page">
       <div class="demo-page__header">
-        <h1>🌿 Commit History</h1>
-        <p>{{ total.toLocaleString() }} commits — click any commit to expand its changed files.</p>
+        <h1><demo-icon name="git" />Commit History</h1>
+        <p>{{ total.toLocaleString() }} commits, click any commit to expand its changed files.</p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div
         class="demo-scroll git-scroll"
@@ -62,6 +73,24 @@ import { GIT_TOTAL, makeCommit, type GitFile } from './git.data';
   `,
 })
 export class GitHistoryComponent {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "Rows that change height when you expand them";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "A commit row is one line until you click it, and then it is however tall its file list makes it. This is the case that breaks scrollers built on estimated heights, and it is straightforward here: expansion is state in your data, the renderer draws the row at its current state, and the engine measures whatever comes out. The only requirement is to tell the engine that the row it already has mounted needs drawing again.";
+  readonly DOCS_NOTES = [
+    "<code>refresh()</code> is what re-measures. The recycler will not re-run the renderer for a mounted index on its own.",
+    "Expansion state must live outside the DOM, or it will be recycled onto the wrong commit.",
+    "Rows below the expanded one move down; the camera stays on the row the reader is on.",
+    "Animating the expansion is fine, but the row must be at its final height when the renderer returns: animate after, or measure the end state.",
+  ];
+  readonly DOCS_CODE = `// Expanding a row changes its height. Keep the flag outside the row and
+// let the engine's ResizeObserver pick up the new size.
+open = new Set<string>();
+
+<ng-template #rowTpl let-c>
+  <app-commit [commit]="c" [open]="open.has(c.sha)" (toggle)="toggle(c.sha)" />
+</ng-template>`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
 
   readonly total = GIT_TOTAL;

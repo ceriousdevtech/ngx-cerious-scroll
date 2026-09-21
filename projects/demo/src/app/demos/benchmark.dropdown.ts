@@ -4,8 +4,7 @@
  * A native <select> renders its popup through the operating system, so its list
  * cannot be styled reliably and looks different on Windows, macOS and Linux.
  * This replaces it with an ordinary DOM listbox: every pixel comes from the
- * benchmark stylesheet, so all four builds — vanilla, React, Vue and Angular —
- * get an identical control.
+ * benchmark stylesheet, so all four builds, vanilla, React, Vue and Angular, * get an identical control.
  *
  * The native <select> stays in the document and remains the single source of
  * truth, so each framework's own value binding keeps working untouched.

@@ -16,6 +16,9 @@ import {
   type Scenario,
 } from './comparison.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 const SIZE_BY_SCENARIO: Record<Scenario, number> = {
   'dynamic-height': 10_000,
   expanding: 10_000,
@@ -29,14 +32,22 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
 @Component({
   selector: 'demo-comparison',
   standalone: true,
-  imports: [CommonModule, FormsModule, ScrollingModule, CeriousScrollDirective],
+  imports: [CommonModule, FormsModule, ScrollingModule, CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   styleUrls: ['./comparison.css'],
   template: `
     <div class="cmp-page">
       <div class="cmp-header">
-        <h1>⚔️ Cerious Scroll vs Traditional Virtualization</h1>
+        <h1><demo-icon name="comparison" />Cerious Scroll vs Traditional Virtualization</h1>
         <p>Same dataset, same mutation, two engines. Watch which one stays stable.</p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="cmp-toolbar">
         <label for="scn">Scenario</label>
@@ -52,7 +63,7 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
           </span>
         } @else if (scenario === 'async-images') {
           <span style="font-size: 0.85rem; color: var(--muted)">
-            Every row loads an image asynchronously — height grows on arrival.
+            Every row loads an image asynchronously, height grows on arrival.
           </span>
         } @else if (scenario === 'continuous-updates') {
           <span style="font-size: 0.85rem; color: var(--muted)">
@@ -112,7 +123,7 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
                   </div>
                   @if (row.expanded) {
                     <div class="sheet-expand">
-                      Detail panel for R{{ row.id }} — 240px tall. Cerious sees the new height the moment it appears.
+                      Detail panel for R{{ row.id }}, 240px tall. Cerious sees the new height the moment it appears.
                     </div>
                   }
                 } @else if (row.isEmail) {
@@ -140,7 +151,7 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
                   }
                   @if (row.expanded) {
                     <div class="cmp-row__expand">
-                      Expanded detail panel — adds 200px of content. Click row again to collapse.
+                      Expanded detail panel, adds 200px of content. Click row again to collapse.
                       <br />Generated lazily on demand.
                     </div>
                   }
@@ -152,9 +163,9 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
               @if (scenario === 'millions') {
                 Browser caps element scrollHeight at ≈33.5M px. 5M × 80px = 400M px → list tops out near row 411,000 of 5,000,000.
               } @else if (scenario === 'spreadsheet') {
-                Fixed itemSize=36 — expanding a row to 276px desyncs the scrollbar.
+                Fixed itemSize=36, expanding a row to 276px desyncs the scrollbar.
               } @else {
-                Fixed itemSize=80 — variable heights mis-align the scrollbar.
+                Fixed itemSize=80, variable heights mis-align the scrollbar.
               }
             </div>
           </div>
@@ -193,7 +204,7 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
                   </div>
                   @if (row.expanded) {
                     <div class="sheet-expand">
-                      Detail panel for R{{ row.id }} — 240px tall. Cerious sees the new height the moment it appears.
+                      Detail panel for R{{ row.id }}, 240px tall. Cerious sees the new height the moment it appears.
                     </div>
                   }
                 } @else if (row.isEmail) {
@@ -221,7 +232,7 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
                   }
                   @if (row.expanded) {
                     <div class="cmp-row__expand">
-                      Expanded detail panel — adds 200px of content. Click row again to collapse.
+                      Expanded detail panel, adds 200px of content. Click row again to collapse.
                       <br />Generated lazily on demand.
                     </div>
                   }
@@ -231,9 +242,9 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
             </ng-template>
             <div class="cmp-warn">
               @if (scenario === 'millions') {
-                Sibling-driver scrollbar decouples virtual position from native scrollHeight — row 4,999,999 is reachable.
+                Sibling-driver scrollbar decouples virtual position from native scrollHeight, row 4,999,999 is reachable.
               } @else {
-                No size cache — ResizeObserver tracks each row's real height live.
+                No size cache, ResizeObserver tracks each row's real height live.
               }
             </div>
           </div>
@@ -243,6 +254,24 @@ const SIZE_BY_SCENARIO: Record<Scenario, number> = {
   `,
 })
 export class ComparisonComponent implements OnDestroy {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "What the element-based camera changes, measured side by side";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "This page runs cerious-scroll and a traditional pixel-offset virtualizer over the same five stress scenarios. The differences all come from one design choice: the camera is an <code>(element, offset)</code> pair rather than a scroll offset in pixels. There is no total pixel height to compute, so nothing has to be estimated, the scrollbar cannot drift as measurements arrive, jumping is O(1) at any dataset size, and there is no maximum-element-height ceiling to run into at a few million rows.";
+  readonly DOCS_NOTES = [
+    "A pixel model needs a total height before it can render, which means estimating heights it has not measured yet.",
+    "Browsers cap element height (~16.7M px in Chrome), so a pixel spacer puts a hard ceiling on row count; an element camera has none.",
+    "Because nothing is estimated, the scrollbar thumb does not resize as you scroll into unmeasured territory.",
+    "Open the benchmark for the reproducible numbers behind this: mount time, per-frame cost, DOM footprint and heap.",
+  ];
+  readonly DOCS_CODE = `<!-- Same rows, same styling, two scrollers. The only difference is
+     which one owns the camera. -->
+<div
+  ceriousScroll
+  [ceriousScrollItems]="rows"
+  [ceriousScrollItemTemplate]="rowTpl"
+></div>`;
+
   @ViewChild(CeriousScrollDirective) cerious?: CeriousScrollDirective<CmpRow>;
 
   readonly SCENARIOS = SCENARIOS;
@@ -312,7 +341,7 @@ export class ComparisonComponent implements OnDestroy {
   }
 
   /** CDK's *cdkVirtualFor uses reference equality on the data source to decide
-   *  whether to re-render — we swap the lazy proxy to force a re-read after a
+   *  whether to re-render, we swap the lazy proxy to force a re-read after a
    *  mutation. (Cerious picks the change up automatically via re-render.) */
   private bumpCdk(): void {
     this.cdkRows = lazyArray(this.ds);

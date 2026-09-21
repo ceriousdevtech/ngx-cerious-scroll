@@ -68,7 +68,7 @@ const KEYWORDS = new Set([
 
 const TOKEN_RE = /(\s+|\/\/.*$|'[^']*'|`[^`]*`|"[^"]*"|\b\d+\b|\b[A-Za-z_$][\w$]*\b|[^\w\s])/g;
 
-/** Cheap regex tokenizer — good enough to colour the visible lines. */
+/** Cheap regex tokenizer, good enough to colour the visible lines. */
 export function tokenize(raw: string): Token[] {
   if (raw.trimStart().startsWith('//')) return [{ text: raw, type: 'comment' }];
   const parts = raw.match(TOKEN_RE) ?? [];

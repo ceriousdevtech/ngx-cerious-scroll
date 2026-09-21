@@ -3,9 +3,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://ceriousdevtech.github.io/ngx-cerious-scroll/)
 
-**Angular bindings for [Cerious Scroll™](https://www.npmjs.com/package/@ceriousdevtech/cerious-scroll)** — high-performance virtual scrolling with **O(1) memory**, consistent **60 FPS+**, and **native variable-height support with no height estimation**.
+**Angular bindings for [Cerious Scroll™](https://www.npmjs.com/package/@ceriousdevtech/cerious-scroll)**: high-performance virtual scrolling with **O(1) memory**, consistent **60 FPS+**, and **native variable-height support with no height estimation**.
 
-Rows are rendered into the engine's own measured containers via Angular's `EmbeddedViewRef` and committed synchronously, so every row's real height is measured (never estimated) — exactly the guarantee that makes CeriousScroll precise. Because rows stay in your Angular tree, **DI, pipes, and structural directives work normally** inside each row.
+Rows are rendered into the engine's own measured containers via Angular's `EmbeddedViewRef` and committed synchronously, so every row's real height is measured (never estimated): exactly the guarantee that makes CeriousScroll precise. Because rows stay in your Angular tree, **DI, pipes, and structural directives work normally** inside each row.
 
 ---
 
@@ -21,7 +21,7 @@ npm install @ceriousdevtech/ngx-cerious-scroll @ceriousdevtech/cerious-scroll
 
 ## Demo
 
-**[Live demo →](https://ceriousdevtech.github.io/ngx-cerious-scroll/)** — 100,000 rows, fixed/variable-height toggle, imperative jump-to-row, and live viewport stats.
+**[Live demo →](https://ceriousdevtech.github.io/ngx-cerious-scroll/)**: 100,000 rows, fixed/variable-height toggle, imperative jump-to-row, and live viewport stats.
 
 To run locally:
 
@@ -53,7 +53,7 @@ import {
   template: `
     <cerious-scroll [items]="items" style="height: 480px">
       <ng-template ceriousScrollItem let-item let-index="index">
-        <div class="row">{{ index }} — {{ item.name }}</div>
+        <div class="row">{{ index }}, {{ item.name }}</div>
       </ng-template>
     </cerious-scroll>
   `,
@@ -63,7 +63,7 @@ export class List {
 }
 ```
 
-Variable heights need no configuration — just render rows of whatever height; the
+Variable heights need no configuration, just render rows of whatever height; the
 engine measures each one.
 
 ### Without a full array (huge / sparse data)
@@ -97,7 +97,7 @@ import { CeriousScrollDirective } from '@ceriousdevtech/ngx-cerious-scroll';
   imports: [CeriousScrollDirective],
   template: `
     <ng-template #row let-item let-index="index">
-      <div class="row">{{ index }} — {{ item.name }}</div>
+      <div class="row">{{ index }}, {{ item.name }}</div>
     </ng-template>
 
     <div
@@ -128,7 +128,7 @@ export class List {
 | `options` | `CeriousScrollOptions` | Engine options. Masonry's DOM callback is supplied by the directive. Read once at creation. |
 | `autoRender` | `boolean` | Re-render on scroll/resize/data changes. Default `true`. |
 
-The row is provided by the projected `<ng-template ceriousScrollItem let-item let-index="index">` or the `itemTemplate` input. Apply `class` / `style` directly to `<cerious-scroll>` — it's a block-level host (set a height!).
+The row is provided by the projected `<ng-template ceriousScrollItem let-item let-index="index">` or the `itemTemplate` input. Apply `class` / `style` directly to `<cerious-scroll>`, it's a block-level host (set a height!).
 
 ### Outputs
 
@@ -227,9 +227,103 @@ Pass `[ceriousScrollOptions]="{ layout: 'table' }"` to render real `<table>` / `
 `<cerious-scroll>` exposes the same via `[headerTemplate]` and `<ng-template ceriousScrollItem>`.
 
 - The **header template** renders into the engine's `<thead>` (same `<table>` as the rows → native column alignment, frozen header).
-- The **row template's root nodes must be `<td>`s** (don't wrap them in a structural directive at the root — that hides the cells from the directive's recycle re-append).
+- The **row template's root nodes must be `<td>`s** (don't wrap them in a structural directive at the root: that hides the cells from the directive's recycle re-append).
 - **`table.autoSizeColumns`** measures column widths once and pins them (auto-sized + stable); or use `table.columnWidths`. Variable row heights work as usual.
 - CSS: `border-collapse: separate` and an **opaque `<thead>` background** (see the core README's [Table Layout](https://github.com/ceriousdevtech/cerious-scroll#-table-layout-layout-table) notes).
+
+---
+
+## Capabilities
+
+These are engine options, set through `ceriousScrollOptions` and forwarded to
+the core unchanged. They combine with any layout unless noted.
+
+| Option | What it does |
+| --- | --- |
+| `sticky` | Pins one dataset row to the top while you are inside its section. The pinned element is drawn outside the recycler, so it survives its own row scrolling out of the mounted window. |
+| `snap` | Settles the camera on a row boundary after scrolling stops. |
+| `infinite` | Calls `onLoadMore` as a threshold near an edge is crossed, once per approach. Grow the bound array and the camera does not move. |
+| `aria` | Writes `aria-setsize` and `aria-posinset` from the real dataset, so a screen reader announces "item 40,112 of 500,000" rather than the size of the mounted window. Opt-in. |
+| `direction` | `'ltr'`, `'rtl'` or `'auto'` to read the host's own computed direction. |
+| `ssr` | `hydrate: true` adopts pre-rendered rows on the first render instead of clearing them, matched by `data-element-index`. |
+
+```html
+<div
+  ceriousScroll
+  [ceriousScrollItems]="rows"
+  [ceriousScrollItemTemplate]="rowTpl"
+  [ceriousScrollOptions]="{
+    sticky: { resolve: resolveSection, className: 'is-pinned' },
+    snap: { enabled: true, align: 'nearest', tolerance: 2 },
+    infinite: { threshold: 20, edges: 'end', onLoadMore: onLoadMore },
+    aria: { enabled: true, label: 'Search results' },
+    direction: 'auto'
+  }"
+></div>
+```
+
+Options are read once, at creation. To flip one of these at runtime, re-create
+the element (for example behind an `@if`).
+
+### `sticky` in Angular
+
+The engine renders the pinned header through your own item template, so a
+section header and that same row scrolling past are one piece of markup. The
+directive keeps the pinned element's embedded view out of the prune pass that
+reclaims rows leaving the viewport, which is what lets it survive its row
+leaving the mounted window.
+
+Two constraints:
+
+- **The item template must be idempotent.** One index is drawn in two places at
+  once, so it has to be a pure function of the bound item.
+- **Give the template a real element at its root**, not a bare `@if` / `@switch`
+  block. A control-flow block's root nodes are only its anchor comments, and the
+  pinned header is populated by re-parenting a view, which moves the anchors and
+  leaves the content behind. A wrapper with `display: contents` costs no layout:
+
+```html
+<ng-template #rowTpl let-item>
+  <div style="display: contents">
+    @if (item.kind === 'head') {
+      <app-section-header [row]="item" />
+    } @else {
+      <app-contact-row [row]="item" />
+    }
+  </div>
+</ng-template>
+```
+
+### `infinite` in Angular
+
+Return the promise. The callback fires once per approach and re-arms when the
+window leaves the threshold; while a returned promise is pending no further call
+is made, which is what stops a slow endpoint being asked again on the next
+frame.
+
+```ts
+onLoadMore = (ctx: InfiniteLoadContext): Promise<void> =>
+  firstValueFrom(this.api.page(ctx.total)).then((page) => {
+    this.rows = this.rows.concat(page.items);
+    // Angular only. A placeholder that becomes real data at the SAME index
+    // (a "loading" row at the tail) will keep rendering as a placeholder:
+    // the recycler does not re-run the template for an index it holds, and an
+    // embedded view re-evaluates only when asked.
+    this.scroller?.refreshRenderedContent();
+  });
+```
+
+### `ssr` in Angular
+
+Server-render each row inside an element carrying `data-element-index`, wrapped
+in one marked `data-cerious-scroll-content`, then set `ssr: { hydrate: true }`.
+The engine adopts those rows on its first render instead of clearing them.
+
+The module touches no DOM at import time, so Angular Universal can render the
+list. Note that Angular's sanitizer strips `data-*` attributes from an
+`[innerHTML]` binding, so a payload supplied that way needs
+`bypassSecurityTrustHtml`, or `data-element-index` will not survive to be
+matched.
 
 ---
 
@@ -244,12 +338,12 @@ Pass `[ceriousScrollOptions]="{ layout: 'table' }"` to render real `<table>` / `
 - **Changing the item count** updates lists/tables in place. Masonry recreates
   its card-count-derived segment layout. Mutating items without changing the count just re-renders the
   content in place (cheap; Angular patches each row, so focus/selection survive)
-  — it does **not** discard cached heights, so editable grids that produce a new
+: it does **not** discard cached heights, so editable grids that produce a new
   `items` array on every edit don't trigger a full viewport re-measure.
 - **If every rendered row's height changes at once** (e.g. a density/layout
   switch) the cached heights become stale and rows can misalign until the next
   scroll. Call `recalculate()` on the directive instance right after the change
-  to drop the height cache and re-measure. Don't call it on routine edits — a
+  to drop the height cache and re-measure. Don't call it on routine edits, a
   single cell edit keeps its row's size, and the engine's built-in
   `ResizeObserver` picks up any incidental resize on its own.
 

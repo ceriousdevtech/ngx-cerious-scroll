@@ -23,8 +23,8 @@
 
 ### Initialization (`ngAfterViewInit` → `ensureInitialized`)
 
-1. `CeriousScrollService.createHost()` instantiates the engine via `ngZone.runOutsideAngular()`. The engine's internal event listeners (wheel, touch, keyboard, resize, content observer) are all added outside Angular's zone — they do not trigger `ApplicationRef.tick()`.
-2. The `onScrollHook` callback (called by the engine's `onScroll`) calls `scheduleRender()`, which coalesces all scroll events in a frame into one `requestAnimationFrame` callback. That frame callback runs `ngZone.run(() => this.render())` — one `ApplicationRef.tick()` per frame.
+1. `CeriousScrollService.createHost()` instantiates the engine via `ngZone.runOutsideAngular()`. The engine's internal event listeners (wheel, touch, keyboard, resize, content observer) are all added outside Angular's zone: they do not trigger `ApplicationRef.tick()`.
+2. The `onScrollHook` callback (called by the engine's `onScroll`) calls `scheduleRender()`, which coalesces all scroll events in a frame into one `requestAnimationFrame` callback. That frame callback runs `ngZone.run(() => this.render())`: one `ApplicationRef.tick()` per frame.
 3. `viewportChanges$` is subscribed. When the output `ceriousScrollViewportChange` has observers, the detail is emitted inside `ngZone.run()`.
 4. `ceriousScrollReady.emit(scroller)` fires with the engine instance.
 5. `queueMicrotask(() => this.render())` schedules the first render after the current CD cycle (so `ContentChild` queries in `CeriousScrollComponent` are resolved first).
@@ -38,7 +38,7 @@ For each row the engine requests via the `ElementRenderer` callback, `renderTemp
 4. `appRef.attachView(view)` registers it with global change detection.
 5. `view.detectChanges()` commits the view's bindings to DOM nodes **synchronously**.
 6. `view.rootNodes` are appended to `elementContainer`.
-7. The engine reads `offsetHeight` — it is real, not estimated.
+7. The engine reads `offsetHeight`: it is real, not estimated.
 
 After `renderViewport` completes, `pruneDetachedViews()` destroys views whose containers are no longer rendered.
 
@@ -46,8 +46,8 @@ After `renderViewport` completes, `pruneDetachedViews()` destroys views whose co
 
 1. Pending `requestAnimationFrame` is cancelled.
 2. `viewportSub.unsubscribe()`.
-3. `destroyAllViews()` — detaches and destroys every `EmbeddedViewRef` in `viewByContainer`.
-4. `hostRef.destroy()` — clears content DOM, detaches scrollbar, disposes engine.
+3. `destroyAllViews()`, detaches and destroys every `EmbeddedViewRef` in `viewByContainer`.
+4. `hostRef.destroy()`, clears content DOM, detaches scrollbar, disposes engine.
 
 ---
 
@@ -84,7 +84,7 @@ Use on any element when you need full control or want to avoid the component wra
 </ng-template>
 ```
 
-With the directive, `[ceriousScrollItemTemplate]` must be set explicitly — there is no `ContentChild` pickup.
+With the directive, `[ceriousScrollItemTemplate]` must be set explicitly: there is no `ContentChild` pickup.
 
 ### Input name mapping
 
@@ -182,7 +182,7 @@ Or via `ViewChild` in a component:
 this.scroller.scrollToBottom();
 ```
 
-Note: `CeriousScrollComponent` exposes the directive's methods through `hostDirectives` output aliasing only for inputs/outputs — for imperative methods you need to inject the directive or use `ViewChild` on the component directly (Angular propagates the host directive's public API through the component instance when queried with `ViewChild`).
+Note: `CeriousScrollComponent` exposes the directive's methods through `hostDirectives` output aliasing only for inputs/outputs, for imperative methods you need to inject the directive or use `ViewChild` on the component directly (Angular propagates the host directive's public API through the component instance when queried with `ViewChild`).
 
 ---
 
@@ -190,12 +190,12 @@ Note: `CeriousScrollComponent` exposes the directive's methods through `hostDire
 
 | Input | `ngOnChanges` behavior |
 |---|---|
-| `ceriousScrollItems` / `ceriousScrollTotalElements` (count changed) | **Recreates engine** — `recreate()` |
-| `ceriousScrollItems` (same length, new reference) | Updates in place — `refreshRenderedContent()` + `render()` |
-| `ceriousScrollOptions` (after first change) | **Recreates engine** — `recreate()` |
-| `ceriousScrollGetItem` | No engine recreation — new function used on next render pass |
-| `ceriousScrollItemTemplate` | No engine recreation — new template used on next render pass |
-| `ceriousScrollAutoRender` | No engine recreation — affects next scroll event |
+| `ceriousScrollItems` / `ceriousScrollTotalElements` (count changed) | **Recreates engine**, `recreate()` |
+| `ceriousScrollItems` (same length, new reference) | Updates in place, `refreshRenderedContent()` + `render()` |
+| `ceriousScrollOptions` (after first change) | **Recreates engine**, `recreate()` |
+| `ceriousScrollGetItem` | No engine recreation, new function used on next render pass |
+| `ceriousScrollItemTemplate` | No engine recreation, new template used on next render pass |
+| `ceriousScrollAutoRender` | No engine recreation, affects next scroll event |
 
 **Why count change recreates the engine:** the `ViewportRenderer` inside the engine stores a copy of `totalElements` at construction. Patching the public property leaves the renderer's internal bound stale, causing phantom renders at out-of-bounds indices (undefined items → 0-height rows → the fill loop never satisfies its height condition → hundreds of renderer callbacks). Recreation gives the engine and renderer a consistent count.
 
@@ -257,6 +257,103 @@ TestBed.configureTestingModule({
 
 ---
 
+## Engine Options the Directive Forwards
+
+`ceriousScrollOptions` reaches the engine as-is, so the core's
+[implementation guide](https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md)
+is the reference for what each option does. This section covers only what is
+different because Angular is in the middle.
+
+### `sticky`
+
+The pinned header is rendered through your item template but mounted outside the
+recycler, so its embedded view is exempt from `pruneDetachedViews()`. That is
+what keeps it populated once its own row scrolls out.
+
+Two constraints on the template:
+
+- **It must be idempotent.** One index is drawn twice at the same time.
+- **Its root should be a real element**, not a bare `@if` / `@switch` block. A
+  control-flow root gives the view nothing but anchor comments as root nodes,
+  and the pinned header is populated by re-parenting a view. Wrap it in a
+  `display: contents` div.
+
+`resolve` runs on every window move, so keep it O(sections), not O(dataset).
+
+### `infinite`
+
+Grow the bound array. The engine re-anchors in place, so the camera does not
+move. Return the promise from `onLoadMore`, or a slow endpoint is asked again on
+the next frame.
+
+One Angular-specific step. The recycler does not re-run the item template for an
+index it already holds, and an embedded view only re-evaluates when something
+asks it to. So if a placeholder becomes real data at the *same* index, which is
+exactly what happens to a "loading" row at the tail, call
+`refreshRenderedContent()` after the data lands:
+
+```ts
+onLoadMore = (ctx: InfiniteLoadContext) =>
+  this.api.page(ctx.total).then((page) => {
+    this.rows = this.rows.concat(page.items);
+    // The row that WAS the spinner now holds a real item. Re-bind what is on
+    // screen, or it keeps showing the spinner until it is recycled, which a
+    // slow scroll never forces.
+    this.scroller?.refreshRenderedContent();
+  });
+```
+
+React and Vue do not need this: their rows re-render when the bound item changes
+identity.
+
+### `aria`
+
+Nothing Angular-specific. Leave `role`/`itemRole` unset for `layout: 'table'`:
+`<tr>` and `<td>` already carry real semantics that a role would replace.
+
+### `snap` and `direction`
+
+Nothing Angular-specific, and that is the whole entry. Both act on the engine's
+own scroll math and on the elements it positions itself, neither of which
+Angular takes part in, so they behave exactly as the
+[core guide](https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md)
+describes.
+
+```html
+[ceriousScrollOptions]="{
+  snap: { enabled: true, align: 'nearest', tolerance: 2 },
+  direction: 'auto'
+}"
+```
+
+Two things follow from the options being read once. Toggling either at runtime
+means re-creating the element, and `direction: 'auto'` is resolved at that
+moment, so flipping a `dir` attribute on an ancestor later has no effect until
+the instance is recreated. Write row CSS with logical properties
+(`padding-inline-start`, `text-align: start`) and it follows the direction on
+its own.
+
+### `ssr`
+
+The module touches no DOM at import time, so Angular Universal can render the
+list. Server-render each row inside an element carrying `data-element-index`,
+wrapped in one marked `data-cerious-scroll-content`.
+
+If you supply that markup through an `[innerHTML]` binding, remember that
+Angular's sanitizer drops `data-*` attributes: pass it through
+`DomSanitizer.bypassSecurityTrustHtml`, or `data-element-index` will not survive
+and there will be nothing for the engine to match.
+
+Styling is the other half, and it is easy to miss. Server markup never passes
+through Angular, so it carries no `_ngcontent-*` attribute and emulated
+encapsulation's scoped selectors will not match it. Adopted rows then render
+unstyled next to the client's own, which looks exactly like the hydration
+mismatch you were trying to avoid. Put the row styles somewhere global, either
+in the global stylesheet or behind `ViewEncapsulation.None` on the component
+that owns the list.
+
+---
+
 ## Common Pitfalls
 
 ### The host element must have an explicit height and `display: block`
@@ -278,17 +375,36 @@ readonly scrollOptions: CeriousScrollOptions = {
 // NOT: [options]="{ wheel: { enabled: true } }"  ← new object every render
 ```
 
-### `recalculate()` is expensive — use it only for bulk height changes
+### `recalculate()` is expensive. Use it only for bulk height changes
 
 `recalculate()` calls `scroller.clearAllCaches()` and re-renders. Use it only when every row's height changes at once (density switch, font size change). For routine data edits or single-row expand/collapse, the engine's `ResizeObserver` handles height changes automatically.
 
 ### `ceriousScrollAutoRender: false` disables all automatic rendering
 
-With `autoRender = false`, scroll events do not trigger renders — you must call `render()` manually from the template ref or a `ViewChild`. This is useful when you need to control the render timing precisely (e.g. after a custom animation completes).
+With `autoRender = false`, scroll events do not trigger renders, you must call `render()` manually from the template ref or a `ViewChild`. This is useful when you need to control the render timing precisely (e.g. after a custom animation completes).
 
 ### Zone-crossing event listeners
 
 Angular template event bindings (`(click)="..."`) on rows rendered outside `ngZone.run()` would not trigger change detection. The wrapper ensures rows are rendered inside `ngZone.run()` via the `requestAnimationFrame` callback. Do not bypass `scheduleRender()` by calling `render()` directly from outside the zone.
+
+---
+
+### A pinned `sticky` header renders empty
+
+Two causes, in order of likelihood:
+
+1. **The item template's root is a control-flow block.** Wrap it in an element
+   (`<div style="display: contents">`). See the `sticky` notes above.
+2. **The item template is not idempotent.** The pinned row is rendered a second
+   time, concurrently with the row itself, so anything that mutates state or
+   depends on call order will misbehave.
+
+### Changes to the library are not picked up by the demo
+
+`tsconfig.json` maps `ngx-cerious-scroll` to `./dist/ngx-cerious-scroll`, so the
+demo consumes the *built* library. Run `ng build ngx-cerious-scroll` after
+editing anything under `projects/ngx-cerious-scroll/src` or you will be testing
+the previous build.
 
 ---
 
@@ -310,7 +426,7 @@ npx ng build demo
 npx ng build demo --base-href /ngx-cerious-scroll/
 ```
 
-The library uses `ng-packagr` (configured via `ng-package.json`). It outputs FESM2022, ESM2022, and type declarations. The publishable package is at `projects/ngx-cerious-scroll/package.json` — the workspace root `package.json` is private and not published.
+The library uses `ng-packagr` (configured via `ng-package.json`). It outputs FESM2022, ESM2022, and type declarations. The publishable package is at `projects/ngx-cerious-scroll/package.json`: the workspace root `package.json` is private and not published.
 
 ### Demo output path
 

@@ -49,6 +49,8 @@ import { drawBaseline, drawComplexity, drawScaling, drawTimeline } from './bench
 import { SWEEP_KEYS, TEMPLATES, TEMPLATE_GROUPS, TEMPLATE_KEYS, templateFootprint } from './benchmark.templates';
 import { METHOD_HTML } from './benchmark.method';
 
+import { DemoIconComponent } from '../demo-icon.component';
+
 type Mode = 'scale' | 'complexity';
 type View = 'table' | 'timeline' | 'chart' | 'baseline';
 
@@ -75,7 +77,7 @@ const BACKGROUND_MSG =
 @Component({
   selector: 'demo-benchmark',
   standalone: true,
-  imports: [FormsModule, CeriousScrollDirective, BenchmarkRowComponent],
+  imports: [FormsModule, CeriousScrollDirective, BenchmarkRowComponent, DemoIconComponent],
   // Styles live in the global stylesheet: Angular scopes component styles to
   // their own template, so they would never reach <benchmark-row>.
   templateUrl: './benchmark.component.html',
@@ -764,7 +766,7 @@ export class BenchmarkComponent implements OnInit, AfterViewInit, OnDestroy {
       { k: 'Heaviest row', v: nf.format(heaviest.nodesPerRow), unit: 'nodes/row', sub: `${heaviest.templateLabel} at ${compactRows(heaviest.total)} rows`, hero: true },
       { k: 'Frame cost', v: ms(heaviest.frameWorkP50), unit: 'ms', sub: `p95 ${ms(heaviest.frameWorkP95)} ms · budget ${this.budget.toFixed(1)} ms`, hero: false },
       { k: 'Worst frame cost', v: ms(worst.frameWorkP50), unit: 'ms', sub: `on ${worst.templateLabel}`, hero: false },
-      { k: 'Build cost climb', v: Number.isFinite(climb) ? climb.toFixed(1) : '—', unit: '×', sub: `${ms(lightest.usPerRender, 0)} µs to ${ms(heaviest.usPerRender, 0)} µs per row`, hero: false },
+      { k: 'Build cost climb', v: Number.isFinite(climb) ? climb.toFixed(1) : ', ', unit: '×', sub: `${ms(lightest.usPerRender, 0)} µs to ${ms(heaviest.usPerRender, 0)} µs per row`, hero: false },
       { k: 'Renders / frame', v: ms(peak.rendersPerFrame), unit: '', sub: `peak, on ${peak.templateLabel}`, hero: false },
       { k: 'Live nodes', v: nf.format(heaviest.domNodes), unit: '', sub: `${nf.format(heaviest.domRows)} rows at ${compactRows(heaviest.total)}`, hero: false },
     ];

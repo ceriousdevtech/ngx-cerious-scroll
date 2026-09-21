@@ -7,7 +7,7 @@
  * index shifts on prepend. The demo component maps index -> seq = topSeq - index
  * (index 0 = newest = topSeq).
  *
- * Pure TS / framework-agnostic — shared by the React, Vue and Angular demos.
+ * Pure TS / framework-agnostic, shared by the React, Vue and Angular demos.
  */
 import { rand, randInt, pick } from '../lib/random';
 

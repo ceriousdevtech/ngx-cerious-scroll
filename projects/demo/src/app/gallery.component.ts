@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { DEMOS } from './registry';
+import { DemoIconComponent } from './demo-icon.component';
 
 @Component({
   selector: 'demo-gallery',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DemoIconComponent],
   template: `
     <div class="gallery">
       <!-- Standalone: the benchmark is not a demo card, it measures them. -->
@@ -30,13 +31,13 @@ import { DEMOS } from './registry';
       </a>
 
       <p class="gallery__lead">
-        High-performance virtual scrolling across real-world UIs — every row is measured (never
+        High-performance virtual scrolling across real-world UIs. Every row is measured (never
         estimated), with O(1) memory. Pick a demo:
       </p>
       <div class="gallery__grid">
         @for (d of demos; track d.slug) {
           <a class="demo-card" [routerLink]="['/', d.slug]">
-            <div class="demo-card__emoji">{{ d.emoji }}</div>
+            <div class="demo-card__icon"><demo-icon [name]="d.icon" /></div>
             <div class="demo-card__title">{{ d.title }}</div>
             <p class="demo-card__blurb">{{ d.blurb }}</p>
           </a>

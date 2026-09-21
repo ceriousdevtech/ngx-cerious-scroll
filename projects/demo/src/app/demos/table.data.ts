@@ -24,7 +24,7 @@ export interface TableColumn {
   cls: string;
 }
 
-/** Shared column model — drives the external <thead>, the body <colgroup>, and cells. */
+/** Shared column model, drives the external <thead>, the body <colgroup>, and cells. */
 export const TABLE_COLUMNS: readonly TableColumn[] = [
   { key: 'id', label: 'ID', width: '110px', cls: '' },
   { key: 'name', label: 'NAME', width: '', cls: '' },

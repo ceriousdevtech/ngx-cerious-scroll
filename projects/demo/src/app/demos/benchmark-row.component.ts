@@ -11,8 +11,8 @@ import * as T from './benchmark.templates';
  * harness reports is what an Angular user actually pays, not the engine's cost
  * in isolation.
  *
- * Every template builds from local DOM only — no network images, no remote
- * fonts — so a run stays deterministic and works offline.
+ * Every template builds from local DOM only, no network images, no remote
+ * fonts, so a run stays deterministic and works offline.
  */
 @Component({
   selector: 'benchmark-row',

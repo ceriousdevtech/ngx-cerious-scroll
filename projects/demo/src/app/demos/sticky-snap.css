@@ -1,0 +1,62 @@
+/* ---- Sticky + snap ----
+ * The pinned header is NOT one of the recycled rows: the recycler's job is to
+ * unmount anything that leaves the window, which is exactly when a header is
+ * needed most. It is a separate long-lived element with its own Angular embedded view. */
+
+.sg-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 56px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sg-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #061019;
+}
+
+.sg-name { font-weight: 600; font-size: 0.9rem; }
+.sg-sub { color: var(--muted); font-size: 0.78rem; }
+.sg-meta {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The section header, used BOTH as an ordinary row and as the pinned copy:
+ * same renderer, so they cannot drift apart visually. */
+.sg-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 38px;
+  background: #151a23;
+  border-bottom: 1px solid var(--line);
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: .06em;
+  color: var(--accent);
+}
+
+.sg-head__count {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Applied by the engine to the pinned copy only. */
+.is-pinned { box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+
+.sg-flag { display: inline-block; min-width: 68px; }

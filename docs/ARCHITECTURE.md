@@ -21,14 +21,14 @@
 
 `ngx-cerious-scroll` is an Angular 17+ binding over the `@ceriousdevtech/cerious-scroll` engine. It bridges two fundamentally different rendering models:
 
-- **CeriousScroll engine** — imperative, DOM-first, synchronous height measurement, incremental rendering, fires its own DOM events
-- **Angular** — zone-based change detection, `EmbeddedViewRef` template rendering, `ApplicationRef` view management, RxJS event streams
+- **CeriousScroll engine**, imperative, DOM-first, synchronous height measurement, incremental rendering, fires its own DOM events
+- **Angular**, zone-based change detection, `EmbeddedViewRef` template rendering, `ApplicationRef` view management, RxJS event streams
 
 The three principal challenges in the Angular integration are:
 
-1. **Synchronous measurement** — Angular templates must be committed to the DOM before the engine reads `offsetHeight`.
-2. **Zone discipline** — scroll events must not trigger a full `ApplicationRef.tick()` per row or per event; only one coalesced tick per animation frame.
-3. **View leaks** — `EmbeddedViewRef`s detached from `ApplicationRef` but not destroyed accumulate over time and make `tick()` progressively slower.
+1. **Synchronous measurement**, Angular templates must be committed to the DOM before the engine reads `offsetHeight`.
+2. **Zone discipline**, scroll events must not trigger a full `ApplicationRef.tick()` per row or per event; only one coalesced tick per animation frame.
+3. **View leaks**, `EmbeddedViewRef`s detached from `ApplicationRef` but not destroyed accumulate over time and make `tick()` progressively slower.
 
 ---
 
@@ -43,12 +43,12 @@ CeriousScrollComponent           (cerious-scroll.component.ts)
                     └── ceriousViewportChange$()      (cerious-scroll.observable.ts)
 
 CeriousScrollItemTemplateDirective  (cerious-scroll-item-template.directive.ts)
-  — marks <ng-template ceriousScrollItem> for pickup by CeriousScrollComponent
+  marks <ng-template ceriousScrollItem> for pickup by CeriousScrollComponent
 ```
 
 There are two public entry points:
-- **`<cerious-scroll>`** (`CeriousScrollComponent`) — declarative component with an `<ng-template ceriousScrollItem>` content child. Maps component inputs/outputs to the directive via `hostDirectives`.
-- **`[ceriousScroll]`** (`CeriousScrollDirective`) — applies to any element. Requires `[ceriousScrollItemTemplate]` to be set explicitly (no projected template pickup).
+- **`<cerious-scroll>`** (`CeriousScrollComponent`), declarative component with an `<ng-template ceriousScrollItem>` content child. Maps component inputs/outputs to the directive via `hostDirectives`.
+- **`[ceriousScroll]`** (`CeriousScrollDirective`), applies to any element. Requires `[ceriousScrollItemTemplate]` to be set explicitly (no projected template pickup).
 
 ---
 
@@ -68,7 +68,7 @@ There are two public entry points:
   └── <div data-cerious-native-scrollbar>  ← managed by engine (if enabled)
 ```
 
-The `data-cerious-scroll-content` element separates row DOM from the native scrollbar. The engine clears row containers with `textContent = ''` during recycling — without this separation the scrollbar element would be wiped each render pass.
+The `data-cerious-scroll-content` element separates row DOM from the native scrollbar. The engine clears row containers with `textContent = ''` during recycling: without this separation the scrollbar element would be wiped each render pass.
 
 Unlike the React and Vue wrappers, the Angular wrapper does **not** use inner mount nodes. Angular's `EmbeddedViewRef` is created fresh per container (previous views are destroyed before a new one is created), so the engine's container management does not conflict with Angular's view ownership.
 
@@ -106,7 +106,7 @@ CeriousScrollDirective.render()
 
 ## Height Measurement Strategy
 
-The engine calls the `ElementRenderer` callback and immediately reads `el.offsetHeight`. `view.detectChanges()` is called **before** `rootNodes` are appended to the container — this runs the full change detection cycle (inputs → child components → DOM) so the nodes are fully formed. Appending them then makes them part of the document layout tree, and the subsequent `offsetHeight` read returns the real height.
+The engine calls the `ElementRenderer` callback and immediately reads `el.offsetHeight`. `view.detectChanges()` is called **before** `rootNodes` are appended to the container: this runs the full change detection cycle (inputs → child components → DOM) so the nodes are fully formed. Appending them then makes them part of the document layout tree, and the subsequent `offsetHeight` read returns the real height.
 
 ```
 template.createEmbeddedView(ctx)
@@ -134,7 +134,7 @@ this.scheduledRenderFrame = requestAnimationFrame(() => {
 });
 ```
 
-`ngZone.run()` triggers one `ApplicationRef.tick()` after the callback completes — one coalesced tick per animation frame, regardless of how many scroll events fired between frames.
+`ngZone.run()` triggers one `ApplicationRef.tick()` after the callback completes: one coalesced tick per animation frame, regardless of how many scroll events fired between frames.
 
 **Why `ngZone.run()` in the frame callback and not per-row?** Angular row templates may contain event bindings (`(click)="..."`, etc.). When a template is rendered outside the zone (no `ngZone.run()`), those event listeners are added outside the zone and clicks on scrolled-in rows do not trigger change detection. Running the entire render pass inside `ngZone.run()` ensures listeners are registered in the zone.
 
@@ -239,10 +239,79 @@ merge(
 ).pipe(share())
 ```
 
-- `cerious-viewport-change` — emitted by wheel/touch/keyboard handlers.
-- `viewport-change` — emitted by the native scrollbar integration.
+- `cerious-viewport-change`, emitted by wheel/touch/keyboard handlers.
+- `viewport-change`, emitted by the native scrollbar integration.
 
 The directive subscribes and emits to `ceriousScrollViewportChange` inside `ngZone.run()` (only when the output has subscribers, to avoid unnecessary ticks).
+
+---
+
+## Pass-through Engine Options
+
+The engine owns the behaviour of `sticky`, `snap`, `infinite`, `aria`,
+`direction` and `ssr`. The directive hands `ceriousScrollOptions` to the engine
+constructor unchanged, so five of the six need no wrapper code: they act on the
+engine's own DOM and scroll math, neither of which Angular is involved in.
+
+`sticky` is the exception, and the reason is the renderer contract.
+
+### Why `sticky` needs directive support
+
+The engine draws the pinned header by calling the same `ElementRenderer` it uses
+for rows:
+
+```ts
+if (this.stickyIndex !== index) {
+  this.stickyElement.textContent = '';
+  renderElement(index, this.stickyElement);
+}
+```
+
+For a vanilla consumer that renderer writes DOM directly. Here it renders an
+embedded view from the item template into whatever element it is handed, and
+`pruneDetachedViews()` then reclaims every view whose container is no longer one
+of the engine's rendered elements. The pinned header is never one of those, it
+is mounted outside the recycler, which is the whole point: so an unguarded
+prune tears its view down on the very pass that created it.
+
+The prune therefore treats it separately, keyed off the `data-cerious-sticky`
+attribute the engine puts on the element:
+
+```ts
+const isSticky = container.hasAttribute(STICKY_ATTR);
+const keep = isSticky ? container.isConnected : active.has(container);
+```
+
+"Still in the document" is the right liveness test for it, because the engine
+removes the element outright as soon as `resolve` returns `null`.
+
+### Root nodes and control-flow templates
+
+Populating the pinned header means rendering a view into a *different element*
+each time the section changes, and that exposed an ordering bug in view
+creation. Embedded views were change-detected before their root nodes were
+appended to the container. When the item template's root is a control-flow
+block (`@if`, `@switch`, `@for`), `rootNodes` holds only the block's anchor
+comments; the rendered content is inserted around them by the block's own view
+container. Detect first and that content materialises while the anchors are
+still detached, so appending `rootNodes` afterwards moves the anchors and leaves
+the content behind.
+
+The nodes are appended first now, then detected. Ordinary rows never showed the
+bug because they are re-rendered into the container they were built in.
+
+Even so, **an item template used with `sticky` should have a real element at its
+root**. A wrapper with `display: contents` is enough, and costs no layout.
+
+### Why the others need nothing
+
+| Option | Where it acts | Directive involvement |
+| --- | --- | --- |
+| `snap` | Engine's camera, on the native `scrollend` signal | none |
+| `infinite` | Engine watches the measured range and calls back | none; grow the bound array |
+| `aria` | Engine writes attributes onto row elements it owns | none |
+| `direction` | Engine's scroll math and logical insets | none |
+| `ssr` | Engine adopts rows already in the container | none |
 
 ---
 
@@ -250,7 +319,7 @@ The directive subscribes and emits to `ceriousScrollViewportChange` inside `ngZo
 
 ### `hostDirectives` in `CeriousScrollComponent`
 
-The component exposes a clean `<cerious-scroll>` API by delegating to `CeriousScrollDirective` via `hostDirectives`. The component's inputs/outputs are aliases mapped directly to the directive's inputs/outputs. This means there is no duplication of logic — the component is purely a template entry point.
+The component exposes a clean `<cerious-scroll>` API by delegating to `CeriousScrollDirective` via `hostDirectives`. The component's inputs/outputs are aliases mapped directly to the directive's inputs/outputs. This means there is no duplication of logic: the component is purely a template entry point.
 
 ### `CeriousScrollService`
 
@@ -258,7 +327,7 @@ The service isolates engine construction and provides `ngZone.runOutsideAngular(
 
 ### No Inner Mount Nodes
 
-The React and Vue wrappers use inner mount nodes because their respective render APIs are either asynchronous (React portals) or maintain internal tree state that must not be externally wiped (Vue vnode tree). Angular's `EmbeddedViewRef` keeps its rootNodes as detached DOM nodes — the wrapper controls when and where they are appended. Destroying the view and creating a fresh one is cheap (Angular's template compiler pre-compiles the factory), so there is no need for the extra mount node indirection.
+The React and Vue wrappers use inner mount nodes because their respective render APIs are either asynchronous (React portals) or maintain internal tree state that must not be externally wiped (Vue vnode tree). Angular's `EmbeddedViewRef` keeps its rootNodes as detached DOM nodes: the wrapper controls when and where they are appended. Destroying the view and creating a fresh one is cheap (Angular's template compiler pre-compiles the factory), so there is no need for the extra mount node indirection.
 
 ### `requestAnimationFrame` Coalescing
 

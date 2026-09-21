@@ -36,7 +36,7 @@ const TEMPLATES = [
   'I just finished {task}. Ready for review!',
   'Can someone help me with {problem}?',
   'Great job on {achievement}! 🎉',
-  'Quick question about {topic} — anyone available?',
+  'Quick question about {topic}, anyone available?',
   'Thanks for the feedback on {task}!',
   "I'll take care of {task} by EOD",
   'Meeting in 10 about {topic}',
@@ -48,12 +48,12 @@ const TEMPLATES = [
   'Agreed!',
   "Let's discuss in standup",
   'Updated the docs for {topic}',
-  'This is looking great — keep it up!',
+  'This is looking great, keep it up!',
   "I'm blocked on {task}, need a hand",
   'Running tests now…',
   'All green! ✅',
   'Deployed to staging',
-  'Code review complete — looks good!',
+  'Code review complete, looks good!',
 ];
 
 const TOPICS = ['the new feature', 'authentication', 'DB optimization', 'the UI redesign', 'API endpoints', 'deployment'];

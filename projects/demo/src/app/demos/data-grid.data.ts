@@ -117,7 +117,7 @@ export function buildOrder(
   if (sortCol) {
     // Precompute each row's sort key ONCE (one makeRow per row) rather than
     // re-deriving rows inside the comparator (which would be O(n log n) makeRow
-    // calls — enough to freeze the tab on 100k rows).
+    // calls, enough to freeze the tab on 100k rows).
     const keyed = order.map((i) => ({ i, k: sortValue(makeRow(i), sortCol) }));
     keyed.sort((a, b) => {
       const cmp = a.k < b.k ? -1 : a.k > b.k ? 1 : 0;

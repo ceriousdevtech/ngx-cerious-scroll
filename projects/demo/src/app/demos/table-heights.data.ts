@@ -2,8 +2,8 @@
  * Deterministic data for the "Native Table · wild dynamic heights" demo.
  *
  * Every row is a real <tr>, but each one carries DRAMATICALLY different content
- * — one-liners next to walls of text, long lists, code blocks, tall banners and
- * wrapping tag clouds — so the engine's per-row measurement (never estimated)
+ *, one-liners next to walls of text, long lists, code blocks, tall banners and
+ * wrapping tag clouds, so the engine's per-row measurement (never estimated)
  * is stress-tested. All content is a pure function of the row index, so the
  * engine re-derives identical heights on every re-render.
  *
@@ -97,7 +97,7 @@ export interface HeightsRow {
   tags: string[];       // tags
 }
 
-/** Build a row purely from its index — the wild, repeatable height per row. */
+/** Build a row purely from its index, the wild, repeatable height per row. */
 export function makeHeightsRow(index: number): HeightsRow {
   const kind = KINDS[Math.floor(rand(index, 1) * KINDS.length)];
   const title = `${pick(TITLES, index, 2)} #${index.toLocaleString()}`;

@@ -27,12 +27,15 @@ import {
   statusSeverity,
 } from './primeng-table.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 /**
  * PrimeNG Table driven by Cerious-Scroll as the scroll engine.
  *
  * How the two cooperate (see the picker conversation in the PR):
  *
- *   • A REAL <p-table [value]="[]"> renders the authentic PrimeNG header — its
+ *   • A REAL <p-table [value]="[]"> renders the authentic PrimeNG header, its
  *     sortable columns (pSortableColumn / p-sortIcon), per-column filter menus
  *     (p-columnFilter), column resize (pResizableColumn) and reorder
  *     (pReorderableColumn). Its `value` is intentionally empty so PrimeNG never
@@ -58,20 +61,27 @@ import {
     CheckboxModule,
     TagModule,
     InputTextModule,
-    CeriousScrollDirective,
-  ],
+    CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page cs-pt-page">
       <div class="demo-page__header">
-        <h1>🧩 PrimeNG Table · Cerious-Scroll engine</h1>
+        <h1><demo-icon name="grid" />PrimeNG Table · Cerious-Scroll engine</h1>
         <p>
-          A real PrimeNG <code>&lt;p-table&gt;</code> header — sort, per-column
-          filters, resize &amp; reorder — backed by PrimeNG's own
+          A real PrimeNG <code>&lt;p-table&gt;</code> header, sort, per-column
+          filters, resize &amp; reorder, backed by PrimeNG's own
           <code>FilterService</code> over all
           {{ total.toLocaleString() }} rows, while <strong>Cerious-Scroll</strong>
           virtualizes the body (~25 rows in the DOM).
         </p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="demo-toolbar">
         <span class="p-input-icon-left" style="flex: 1; min-width: 220px">
@@ -153,7 +163,7 @@ import {
 
       <!-- Cerious-Scroll body. Two feeding modes (see the class):
            · idle  → index-derived rows (getItem), so ANY size renders with ~zero
-                     data memory — selecting 5,000,000 is instant.
+                     data memory, selecting 5,000,000 is instant.
            · sort/filter active → the materialized + processed PtRow[] window. -->
       <div
         class="demo-scroll cs-pt-scroll"
@@ -204,6 +214,38 @@ import {
   `,
 })
 export class PrimengTableComponent implements AfterViewInit {
+  /** 'How to build this' panel. */
+  readonly DOCS_FEATURE = "A real PrimeNG table header over a virtualized body";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "PrimeNG's own virtual scroller and this engine both want to own the camera, so the trick is to let each do the half it is good at. A real <code>&lt;p-table&gt;</code> with an <em>empty</em> <code>value</code> renders the authentic header: sortable columns, per-column filter menus, resize and reorder, all the PrimeNG behaviour your users expect. It renders no rows. The body underneath is an ordinary <code>layout: 'table'</code> scroller, so the row count costs nothing. The only thing the two have to agree on is column width, which the body measures off the header PrimeNG just drew.";
+  readonly DOCS_NOTES = [
+    "Give <code>&lt;p-table&gt;</code> an empty <code>value</code>. Feed it the real rows and PrimeNG builds the whole table in the DOM, which is the thing you are here to avoid.",
+    "Sorting and filtering stay yours: PrimeNG raises the event, you reorder the array, the engine renders the window.",
+    "Column widths have to be pushed from the header to the body, since they are two separate tables. Re-measure after a resize or a reorder.",
+    "Everything PrimeNG scopes to its own table (<code>.p-datatable</code> descendants) will not reach your body rows, so the row styling is yours to write.",
+  ];
+  readonly DOCS_CODE = `<!-- A REAL p-table with an EMPTY value: PrimeNG renders its header, sort,
+     column filters, resize and reorder, and no rows at all. -->
+<p-table [value]="[]" [columns]="columns">
+  <ng-template pTemplate="header" let-cols>
+    <tr>
+      @for (c of cols; track c.field) {
+        <th [pSortableColumn]="c.field" pResizableColumn>{{ c.header }}</th>
+      }
+    </tr>
+  </ng-template>
+</p-table>
+
+<!-- The body is ours. Same column widths, measured off the header above,
+     so the two line up. -->
+<div
+  class="pt-body"
+  ceriousScroll
+  [ceriousScrollItems]="rows"
+  [ceriousScrollItemTemplate]="rowTpl"
+  [ceriousScrollOptions]="{ layout: 'table' }"
+></div>`;
+
   @ViewChild('dt') dt?: Table;
   @ViewChild('headerWrap') headerWrap?: ElementRef<HTMLElement>;
   @ViewChild(CeriousScrollDirective) body?: CeriousScrollDirective<PtRow>;
@@ -219,7 +261,7 @@ export class PrimengTableComponent implements AfterViewInit {
   total = 100_000;
 
   /**
-   * The full dataset, materialised LAZILY — only when a sort/filter actually
+   * The full dataset, materialised LAZILY, only when a sort/filter actually
    * needs every row. Idle scrolling never builds it, so selecting 1,000,000 or
    * 5,000,000 rows is instant and costs ~no memory (rows are derived by index).
    */
@@ -354,7 +396,7 @@ export class PrimengTableComponent implements AfterViewInit {
 
   // ----- Processing.
   //
-  // Idle (no sort/filter): feed CS index-derived rows — no dataset in memory, so
+  // Idle (no sort/filter): feed CS index-derived rows, no dataset in memory, so
   // any size scrolls instantly. When a feature is active, materialise the full
   // dataset (lazily, with a confirm past MATERIALIZE_WARN) and run PrimeNG's own
   // FilterService + the sort comparator over EVERY row, then hand CS the window.
@@ -432,8 +474,7 @@ export class PrimengTableComponent implements AfterViewInit {
 
   /**
    * Build the full dataset on demand. Past MATERIALIZE_WARN this is a heavy
-   * allocation (5,000,000 rows ≈ 1.3 GB / a couple seconds), so confirm once —
-   * and make clear it's PrimeNG's data cost, not the scroll engine. Returns
+   * allocation (5,000,000 rows ≈ 1.3 GB / a couple seconds), so confirm once, * and make clear it's PrimeNG's data cost, not the scroll engine. Returns
    * false if the user declines (we then revert to index-derived mode).
    */
   private ensureMaterialized(): boolean {
@@ -445,7 +486,7 @@ export class PrimengTableComponent implements AfterViewInit {
       const ok = window.confirm(
         `Sorting or filtering ${this.total.toLocaleString()} rows builds the full ` +
           `dataset in memory (~${size}, a brief pause).\n\n` +
-          `Cerious-Scroll still renders only ~25 rows — this cost is PrimeNG's ` +
+          `Cerious-Scroll still renders only ~25 rows, this cost is PrimeNG's ` +
           `data processing, not the scroll engine.\n\nContinue?`
       );
       if (!ok) {

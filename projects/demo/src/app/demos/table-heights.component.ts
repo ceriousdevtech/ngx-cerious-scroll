@@ -11,21 +11,32 @@ import {
   type HeightsRow,
 } from './table-heights.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 @Component({
   selector: 'demo-table-heights',
   standalone: true,
-  imports: [CeriousScrollDirective],
+  imports: [CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page cs-heights-page">
       <div class="demo-page__header">
-        <h1>🪜 Native &lt;table&gt; · wild dynamic heights</h1>
+        <h1><demo-icon name="tableHeights" />Native &lt;table&gt; · wild dynamic heights</h1>
         <p>
           Real <code>&lt;tr&gt;</code>/<code>&lt;td&gt;</code> rows via <code>layout: 'table'</code>, but every
-          row has a <strong>different, unpredictable height</strong> — one-liners next to walls of text, long
+          row has a <strong>different, unpredictable height</strong>, one-liners next to walls of text, long
           lists, code blocks, tall banners and wrapping tag clouds. Each row is <em>measured</em>, so the
           single &lt;tbody&gt; transform stays pixel-correct.
         </p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="demo-toolbar">
         <label>
@@ -115,6 +126,25 @@ import {
   `,
 })
 export class TableHeightsComponent {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "layout: 'table' under wildly variable row heights";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "A stress test for the claim that heights are measured rather than estimated. Every <code>&lt;tr&gt;</code> here is a different height (one-liners, walls of text, long lists, code blocks, tall banners) and none of them is declared anywhere. The engine measures each row as it mounts and keeps the scroll math honest against those measurements, so the scrollbar does not drift and jumping to a row lands on that row. Estimating instead is what produces the classic virtual-scroll symptom: a thumb that changes size as you scroll and a position that slides.";
+  readonly DOCS_NOTES = [
+    "The row must have its final height when your renderer returns: images and web fonts are the usual reasons it does not.",
+    "If a row changes height after the fact (an expand/collapse), re-render that index so it is measured again.",
+    "Measurement is cached per index, so scrolling back over a row does not re-measure it.",
+    "There is no <code>estimatedItemSize</code> option here by design; nothing in the engine wants one.",
+  ];
+  readonly DOCS_CODE = `<!-- Nothing extra to configure: every row is measured, so they may be
+     any height at all. -->
+<div
+  ceriousScroll
+  [ceriousScrollItems]="rows"
+  [ceriousScrollItemTemplate]="rowTpl"
+  [ceriousScrollOptions]="{ layout: 'table' }"
+></div>`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
 
   readonly columns = HEIGHTS_COLUMNS;

@@ -1,0 +1,75 @@
+.rtl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 86px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rtl-titleline { display: flex; align-items: center; gap: 8px; }
+
+.rtl-pill {
+  font-size: 0.66rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.rtl-pill--ok { color: var(--accent); border-color: rgba(120, 243, 210, .35); }
+.rtl-pill--wait { color: #e3b341; border-color: rgba(227, 179, 65, .35); }
+.rtl-pill--bad { color: #ff8b8b; border-color: rgba(255, 139, 139, .35); }
+
+.rtl-meta { display: block; color: var(--muted); font-size: 0.72rem; margin-top: 2px; }
+.rtl-ref { font-family: ui-monospace, Menlo, monospace; font-size: 0.7rem; }
+
+/* `margin-inline-start: auto` pushes to the trailing edge in BOTH directions:
+ * the same reason the engine positions rows with logical insets. */
+.rtl-money {
+  margin-inline-start: auto;
+  text-align: end;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.rtl-balance {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rtl-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+}
+
+.rtl-main { min-width: 0; }
+.rtl-title { font-weight: 600; font-size: 0.9rem; }
+.rtl-sub { color: var(--muted); font-size: 0.78rem; }
+
+.rtl-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.rtl-neg { color: #ff8b8b; }
+.rtl-pos { color: var(--accent); }
+
+.rtl-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.rtl-card h4 { margin: 0 0 6px; font-size: 0.86rem; }
+.rtl-card p { margin: 0; font-size: 0.8rem; color: #c9d1d9; line-height: 1.6; }

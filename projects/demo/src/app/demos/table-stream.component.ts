@@ -10,29 +10,39 @@ import {
   type StreamEvent,
 } from './table-stream.data';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 // The dataset GROWS in place as events arrive (updateTotalElements, no recreate
-// — an in-progress scrollbar drag survives), so the oldest event keeps a STABLE
+//, an in-progress scrollbar drag survives), so the oldest event keeps a STABLE
 // bottom index: scrolling to the bottom doesn't bounce. Content is index-
-// addressed — index i shows seq = baseSeq - i (index 0 = newest = baseSeq,
-// index total-1 = oldest = seq 0) — and "prepending k" grows both total and
+// addressed, index i shows seq = baseSeq - i (index 0 = newest = baseSeq,
+// index total-1 = oldest = seq 0), and "prepending k" grows both total and
 // baseSeq by k while we shift the anchor by k to hold position.
 const INITIAL_TOTAL = 2000;
 
 @Component({
   selector: 'demo-table-stream',
   standalone: true,
-  imports: [CeriousScrollDirective],
+  imports: [CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page cs-stream-page">
       <div class="demo-page__header">
-        <h1>📡 Native &lt;table&gt; · prepend &amp; scroll anchoring</h1>
+        <h1><demo-icon name="tablePrepend" />Native &lt;table&gt; · prepend &amp; scroll anchoring</h1>
         <p>
-          New, <strong>variable-height</strong> rows are injected at the <strong>top</strong> of the stream —
-          like a live telemetry feed or a chat-history backfill. Scroll down a bit, then inject: with anchoring
+          New, <strong>variable-height</strong> rows are injected at the <strong>top</strong> of the stream, like a live telemetry feed or a chat-history backfill. Scroll down a bit, then inject: with anchoring
           on, the row you're reading stays put while new rows pile up above; with <em>Follow newest</em> on,
           the view rides the top instead.
         </p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="demo-toolbar">
         <button type="button" (click)="prepend(1)">Inject 1 ↑</button>
@@ -111,6 +121,22 @@ const INITIAL_TOTAL = 2000;
   `,
 })
 export class TableStreamComponent implements OnDestroy {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "Prepending rows with the scroll position anchored";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "Adding rows to the <em>top</em> of a stream (a live telemetry feed, chat history backfilled as you scroll up) moves everything below them down. Handled naively the reader is thrown somewhere else mid-sentence. Because the camera is an <code>(element, offset)</code> pair rather than a pixel offset, anchoring is close to free: inserting before the camera's element only changes that element's index, so the engine re-bases the index and the reader stays on exactly the row they were reading, whatever the new rows' heights turn out to be.";
+  readonly DOCS_NOTES = [
+    "The inserted rows may be any height; nothing has to be known in advance for the anchoring to hold.",
+    "Anchoring is about the element under the camera, so it survives even when the prepended block is taller than the viewport.",
+    "Appending to the end is the ordinary <code>updateTotalElements</code> path: only the start needs re-basing.",
+    "If you prepend while the reader is at the very top, the new rows are what they now see, which is usually what a feed should do.",
+  ];
+  readonly DOCS_CODE = `// Prepend. The engine re-anchors on the row you were reading, so the
+// viewport does not jump by the height of what arrived above it.
+prepend(incoming: Row[]): void {
+  this.rows = [...incoming, ...this.rows];
+}`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
 
   readonly columns = STREAM_COLUMNS;
@@ -181,7 +207,7 @@ export class TableStreamComponent implements OnDestroy {
     this.baseSeq += k;                          // k newer events enter at the top
     this.freshMinSeq = this.baseSeq - k + 1;    // mark the just-arrived batch NEW
 
-    // Grow the dataset IN PLACE — no recreate, so a scrollbar drag survives and
+    // Grow the dataset IN PLACE, no recreate, so a scrollbar drag survives and
     // the oldest event keeps a stable bottom index (no bouncing tail).
     eng.updateTotalElements(nextTotal);
 
@@ -197,7 +223,7 @@ export class TableStreamComponent implements OnDestroy {
       if (!wasAtTop) this.newAbove += k;
     }
     this.scroller?.recalculate();
-    // The track just got longer — re-pin the thumb (defers if mid-drag).
+    // The track just got longer, re-pin the thumb (defers if mid-drag).
     eng.syncScrollbar();
     this.total = nextTotal;                     // keep the input in sync
     this.seen = nextTotal;

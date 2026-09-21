@@ -9,9 +9,25 @@
   min-height: 0;
 }
 
-.cmp-header { padding: 18px 24px 8px; }
-.cmp-header h1 { margin: 0 0 4px; font-size: 1.6rem; color: var(--text); }
-.cmp-header p { margin: 0; color: var(--muted); }
+/* The vs pages get the same header chrome as every other demo: same padding,
+   same panel background and rule, same heading size. They used to run a larger
+   bare heading, which made these two pages look like they came from a
+   different gallery. */
+.cmp-header {
+  padding: 14px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.cmp-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 2px;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+.cmp-header p { margin: 0; color: var(--muted); font-size: 0.85rem; }
 
 .cmp-toolbar {
   display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
@@ -36,8 +52,7 @@
 .cmp-toolbar select:focus {
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(120,243,210,.22);
 }
-/* The popup list: macOS ignores option styling, but Windows/Linux honor it —
-   theme it dark to match the toolbar instead of the default white list. */
+/* The popup list: macOS ignores option styling, but Windows/Linux honor it, theme it dark to match the toolbar instead of the default white list. */
 .cmp-toolbar select option { background: #11141d; color: var(--text); }
 .cmp-toolbar button.primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -202,6 +217,6 @@
   width: 5400px; box-sizing: border-box;
 }
 
-/* Spreadsheet wrapper overrides live in global styles.scss — emulated
+/* Spreadsheet wrapper overrides live in global styles.scss, emulated
    view encapsulation can't reliably target the runtime-created
    [data-cerious-scroll-content] element from this component's CSS. */

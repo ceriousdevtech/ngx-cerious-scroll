@@ -144,7 +144,7 @@ export const mean = (values: number[]): number =>
   values.reduce((sum, v) => sum + v, 0) / (values.length || 1);
 
 export const ms = (value: number | undefined, digits = 2): string =>
-  Number.isFinite(value as number) ? (value as number).toFixed(digits) : '—';
+  Number.isFinite(value as number) ? (value as number).toFixed(digits) : ', ';
 
 export function compactRows(n: number): string {
   if (n >= 1e6) return `${n / 1e6}M`;
@@ -457,7 +457,7 @@ export function toMarkdown(payload: ExportPayload): string {
       .map(
         (r) =>
           `| ${label(r)} | ${ms(r.mountMs)} ms | ${ms(r.frameWorkP50)} ms | ${ms(r.frameWorkP95)} ms` +
-          ` | ${Number.isFinite(r.fps) ? Math.round(r.fps) : '—'} | ${ms(r.jankPct, 1)}%` +
+          ` | ${Number.isFinite(r.fps) ? Math.round(r.fps) : ', '} | ${ms(r.jankPct, 1)}%` +
           ` | ${ms(r.rendersPerFrame, 2)} | ${ms(r.usPerRender, 0)} µs | ${nf.format(r.domNodes)} |`,
       )
       .join('\n') +
@@ -486,15 +486,15 @@ export function toMarkdown(payload: ExportPayload): string {
           const v = virt.find((x) => x.total === b.total);
           if (b.status !== 'ok') {
             return (
-              `| ${nf.format(b.total)} | ${v ? `${ms(v.mountMs)} ms` : '—'}` +
-              ` | **${b.status === 'refused' ? 'cannot be built' : 'never finished'}** | — | —` +
-              ` | ${v ? nf.format(v.domNodes) : '—'} | ~${nf.format(b.estimatedNodes)} (est.) |`
+              `| ${nf.format(b.total)} | ${v ? `${ms(v.mountMs)} ms` : ', '}` +
+              ` | **${b.status === 'refused' ? 'cannot be built' : 'never finished'}** |, |, ` +
+              ` | ${v ? nf.format(v.domNodes) : ', '} | ~${nf.format(b.estimatedNodes)} (est.) |`
             );
           }
           return (
-            `| ${nf.format(b.total)} | ${v ? `${ms(v.mountMs)} ms` : '—'} | ${ms(b.mountMs, 1)} ms` +
-            ` | ${v ? `${ms(v.frameIntervalP50, 1)} ms` : '—'} | ${ms(b.frameIntervalP50, 1)} ms` +
-            ` | ${v ? nf.format(v.domNodes) : '—'} | ${nf.format(b.domNodes ?? 0)} |`
+            `| ${nf.format(b.total)} | ${v ? `${ms(v.mountMs)} ms` : ', '} | ${ms(b.mountMs, 1)} ms` +
+            ` | ${v ? `${ms(v.frameIntervalP50, 1)} ms` : ', '} | ${ms(b.frameIntervalP50, 1)} ms` +
+            ` | ${v ? nf.format(v.domNodes) : ', '} | ${nf.format(b.domNodes ?? 0)} |`
           );
         })
         .join('\n') +

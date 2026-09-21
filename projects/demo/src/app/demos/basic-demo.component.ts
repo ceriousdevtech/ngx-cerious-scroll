@@ -8,18 +8,29 @@ import {
 
 import { rand } from '../lib/random';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 type Variation = 'uniform' | 'mixed' | 'variable';
 
 @Component({
   selector: 'demo-basic',
   standalone: true,
-  imports: [FormsModule, CeriousScrollDirective],
+  imports: [FormsModule, CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   template: `
     <div class="demo-page">
       <div class="demo-page__header">
-        <h1>🧱 Basic virtual scroll</h1>
-        <p>Lazy <code>getItem</code> data source — no array is allocated, so a million rows costs nothing.</p>
+        <h1><demo-icon name="basic" />Basic virtual scroll</h1>
+        <p>Lazy <code>getItem</code> data source, no array is allocated, so a million rows costs nothing.</p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="demo-toolbar">
         <label for="size">Rows</label>
@@ -94,6 +105,28 @@ type Variation = 'uniform' | 'mixed' | 'variable';
   `,
 })
 export class BasicDemoComponent {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "The base case: host, total, render";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/IMPLEMENTATION_GUIDE.md";
+  readonly DOCS_INTRO = "Everything else on this site is a variation on these three arguments. You give the engine a host element, how many items exist, and a function that fills one element for a given index. It mounts only what is visible and recycles elements as the window moves, so the DOM node count is a function of your viewport, never of your dataset. Heights are <em>measured</em>, never estimated, which is why a million rows of unpredictable height behaves the same as a million uniform ones.";
+  readonly DOCS_NOTES = [
+    "The renderer is called for a recycled element. Clearing it first is the simplest correct thing; reusing child nodes is the fastest.",
+    "Row heights are measured from the DOM. You do not need to declare them, and they may differ per row.",
+    "<code>jumpToElement</code> is constant-time. The camera is an <code>(element, offset)</code> pair, so there is no pixel total to compute.",
+    "<code>updateTotalElements</code> grows or shrinks the dataset in place without moving the camera.",
+  ];
+  readonly DOCS_CODE = `<div
+  class="feed"
+  ceriousScroll
+  [ceriousScrollTotalElements]="total"
+  [ceriousScrollGetItem]="getItem"
+  [ceriousScrollItemTemplate]="rowTpl"
+></div>
+
+<ng-template #rowTpl let-index="index">
+  <app-row [index]="index" />
+</ng-template>`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
 
   readonly SIZES = [100, 1_000, 10_000, 100_000, 1_000_000];
@@ -104,7 +137,7 @@ export class BasicDemoComponent {
   jumpTo = '';
   viewport: CeriousViewportChangeDetail | null = null;
 
-  /** Bound (stable identity) lazy getter — `item` is just the index. */
+  /** Bound (stable identity) lazy getter, `item` is just the index. */
   readonly getItem = (index: number): number => index;
 
   heightFor(index: number, variation: Variation): number {

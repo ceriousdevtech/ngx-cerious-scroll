@@ -1,0 +1,84 @@
+.feed-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.feed-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+
+.feed-body { min-width: 0; flex: 1; }
+.feed-head { display: flex; align-items: baseline; gap: 8px; }
+.feed-who { font-weight: 600; font-size: 0.86rem; }
+.feed-when {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.feed-text { font-size: 0.82rem; color: #c9d1d9; line-height: 1.5; margin: 4px 0 0; }
+.feed-batch {
+  font-size: 0.68rem;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+/* The loading row is a real dataset row at the tail, so it is recycled and
+ * positioned like everything else: no floating overlay to keep in sync with
+ * the scroll position. */
+.feed-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 64px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.feed-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .18);
+  border-top-color: var(--accent);
+  animation: feed-spin .7s linear infinite;
+}
+
+@keyframes feed-spin { to { transform: rotate(360deg); } }
+
+/* Request log, above the list: the point of the demo is WHEN the engine asks,
+ * so it reads before the rows rather than after them. */
+.feed-panel {
+  padding: 10px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.feed-panel h3 {
+  margin: 0 0 3px;
+  font-size: 0.68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.feed-log {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  height: 46px;
+  overflow: auto;
+}
+
+.feed-log div { padding: 1px 0; }

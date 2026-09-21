@@ -2,6 +2,9 @@ import { Component, ViewChild } from '@angular/core';
 import { CeriousScrollDirective, type CeriousScrollOptions } from 'ngx-cerious-scroll';
 import { rand } from '../lib/random';
 
+import { DemoIconComponent } from '../demo-icon.component';
+import { DemoDocsComponent } from '../demo-docs.component';
+
 /**
  * Masonry with real content: network images, a composed card template, and an
  * interactive carousel.
@@ -9,7 +12,7 @@ import { rand } from '../lib/random';
  * Three constraints follow from cards being rendered only while near the
  * viewport, and from the engine sizing a card before the browser lays it out:
  *
- *   1. Media space is reserved from intrinsic dimensions — a card that grows
+ *   1. Media space is reserved from intrinsic dimensions, a card that grows
  *      after mount is never re-measured, and overlaps its neighbour.
  *   2. Card height is enforced rather than estimated: the chrome below the
  *      image has a fixed height, so getItemHeight cannot disagree with the DOM.
@@ -35,18 +38,26 @@ interface CardModel {
 @Component({
   selector: 'demo-masonry-gallery',
   standalone: true,
-  imports: [CeriousScrollDirective],
+  imports: [CeriousScrollDirective, DemoIconComponent, DemoDocsComponent],
   styleUrl: './masonry.css',
   template: `
     <div class="demo-page">
       <div class="demo-page__header">
-        <h1>🖼️ Masonry · real content</h1>
+        <h1><demo-icon name="masonryGallery" />Masonry · real content</h1>
         <p>
           Network images, a composed Angular template, and a carousel inside every multi-shot
-          card — virtualized. Media space is reserved, chrome height is enforced, and per-card
+          card, virtualized. Media space is reserved, chrome height is enforced, and per-card
           state is keyed by index so it survives the template being re-created.
         </p>
       </div>
+
+      <demo-docs
+        [feature]="DOCS_FEATURE"
+        [docs]="DOCS_LINK"
+        [introHtml]="DOCS_INTRO"
+        [notesHtml]="DOCS_NOTES"
+        [code]="DOCS_CODE"
+      />
 
       <div class="demo-toolbar">
         <label for="gallery-items">Items</label>
@@ -103,7 +114,7 @@ interface CardModel {
               <span class="gallery-card__badge">{{ model(index).tag }}</span>
             </div>
             <p class="gallery-card__title">
-              Frame {{ index.toLocaleString() }} — {{ model(index).tag }} study,
+              Frame {{ index.toLocaleString() }}, {{ model(index).tag }} study,
               {{ model(index).frames > 1 ? model(index).frames + ' shots' : 'single shot' }}
             </p>
             <div class="gallery-card__actions">
@@ -125,6 +136,27 @@ interface CardModel {
   `,
 })
 export class MasonryGalleryComponent {
+  /** 'How to build this' panel. Prose shared with the vanilla demos. */
+  readonly DOCS_FEATURE = "Masonry carrying network images and interactive cards";
+  readonly DOCS_LINK = "https://github.com/ceriousdevtech/cerious-scroll/blob/main/docs/MASONRY.md";
+  readonly DOCS_INTRO = "Recycled cards make three demands that a static grid never does, and this demo is built around all three. Media needs its space <em>reserved</em> before it loads, or the column frontier is measured against a card that has not finished growing. Rendering must be idempotent, because a container arrives holding whatever the last index put in it. And event handlers belong on the container, delegated: a listener attached to a recycled card will fire for the wrong item a few hundred rows later.";
+  readonly DOCS_NOTES = [
+    "<code>aspect-ratio</code> (or a padding box) gives the card its final height before the image arrives, no reflow, no frontier drift.",
+    "Set <code>loading=\"lazy\"</code> and <code>decoding=\"async\"</code>; the engine mounts only what is visible, but the browser still fetches what you hand it.",
+    "State that must survive recycling (expanded, selected, carousel position) belongs in your data, not on the DOM node.",
+    "Delegated handlers read identity from a data attribute, which is re-written on every render and therefore always current.",
+  ];
+  readonly DOCS_CODE = `<ng-template #cardTpl let-card>
+  <article class="card">
+    <!-- Reserve the space BEFORE the image loads, or the card resizes
+         under the packer. -->
+    <div class="media" [style.aspectRatio]="card.ratio">
+      <img [src]="card.src" loading="lazy" alt="" />
+    </div>
+    <app-card-body [card]="card" />
+  </article>
+</ng-template>`;
+
   @ViewChild(CeriousScrollDirective) scroller?: CeriousScrollDirective<number>;
 
   readonly itemCounts = ITEM_COUNTS;
@@ -133,7 +165,7 @@ export class MasonryGalleryComponent {
   total = 50_000;
   stat = 'scroll to see live stats';
 
-  /** Live column width, captured from getItemHeight — the one callback reporting it. */
+  /** Live column width, captured from getItemHeight, the one callback reporting it. */
   columnWidth = 260;
 
   /**

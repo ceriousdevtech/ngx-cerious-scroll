@@ -185,7 +185,7 @@ export const SCENARIOS: { id: Scenario; label: string; desc: string }[] = [
   {
     id: 'dynamic-height',
     label: '1. Dynamic height',
-    desc: 'Mixed row heights including rows that are 500–1800px tall (larger than the viewport). CDK\'s fixed itemSize ignores the variation completely — Cerious sees it live.',
+    desc: 'Mixed row heights including rows that are 500–1800px tall (larger than the viewport). CDK\'s fixed itemSize ignores the variation completely, Cerious sees it live.',
   },
   {
     id: 'expanding',
@@ -200,7 +200,7 @@ export const SCENARIOS: { id: Scenario; label: string; desc: string }[] = [
   {
     id: 'millions',
     label: '4. Millions of rows',
-    desc: '5,000,000 rows. CDK paints a spacer of itemCount × itemSize px, but browsers cap any element\'s scrollHeight at ~33.5M px — so the list silently clamps near row 411,000. Cerious\'s sibling-driver scrollbar reaches all 5M.',
+    desc: '5,000,000 rows. CDK paints a spacer of itemCount × itemSize px, but browsers cap any element\'s scrollHeight at ~33.5M px, so the list silently clamps near row 411,000. Cerious\'s sibling-driver scrollbar reaches all 5M.',
   },
   {
     id: 'continuous-updates',
